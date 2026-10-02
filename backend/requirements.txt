@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pymongo
+pydantic
+pydantic-settings
+pydantic[email]
+python-dotenv
+mongomock
+groq
