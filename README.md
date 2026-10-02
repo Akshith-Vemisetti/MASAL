@@ -1,52 +1,453 @@
-# MASAL
+# MASAL AI — AI-Powered Real Estate Sales Assistant
 
-MASAL is a real-estate lead and inventory management application. Customers can submit property inquiries and review their submissions; salespeople can manage property listings, review incoming leads, and use AI-assisted analysis and marketing tools.
+MASAL helps real-estate salespeople turn inbound customer inquiries into actionable sales opportunities. The platform supports lead intake, AI lead analysis, prioritization, conversational sales assistance, property inventory management, and AI-generated marketing content for sales workflows.
 
-## Product workflows
+## Live Demo
 
-### For customers
+**Frontend:** [MASAL AI login](https://masal-one.vercel.app/login)
 
-- Create an account and sign in.
-- Submit a property inquiry with location, budget, property requirements, timeline, and other preferences.
-- Review previously submitted inquiries.
+**Backend API:** [FastAPI service](https://masal-bud4.onrender.com)
 
-### For salespeople
+## Demo Credentials
 
-- Review leads and filter them by search terms and AI-assigned priority.
-- Analyze an individual lead or run analysis for pending leads.
-- Chat with the global sales assistant or ask questions about a specific lead.
-- Create, edit, browse, and remove property inventory.
-- Generate marketing copy and an AI-generated property image, then download the image with property details overlaid.
+### Salesperson
 
-## Technology stack
+- Email: sales@masal.com
+- Password: masal2024
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| Frontend | React 19, TypeScript 6, Vite 8, Tailwind CSS 4, React Markdown 10 | Build the role-based web application and render formatted assistant responses. |
-| UI components | Project-local React components | Provide reusable interface elements such as buttons, cards, inputs, labels, and text areas. |
-| Frontend API | Browser Fetch API | Send application requests to the backend. |
-| Backend | Python 3.11, FastAPI, Pydantic, Uvicorn | Serve API endpoints and validate application data. |
-| Database | MongoDB, MongoDB Atlas, PyMongo, mongomock | Persist users, leads, and inventory, with an in-memory fallback when no MongoDB URI is configured. |
-| Authentication | Custom FastAPI endpoints and frontend role-based routes | Route customer and salesperson accounts to their respective application areas. |
-| AI / LLM | Groq API and Groq Python SDK | Analyze and prioritize leads, power assistant chats, and generate marketing copy using the configured Groq model. |
-| AI image generation | Hugging Face InferenceClient and FLUX.1-schnell | Generate property marketing images from AI-written prompts. |
-| Image composition | Pillow and browser HTML Canvas | Encode generated images and overlay accurate property information for downloads. |
+The login page includes a "Continue as Salesperson" button that fills these demo values into the form while still using the normal authentication flow. This is not a bypass of authentication.
 
-Frontend versions are the major versions declared in `frontend/package.json`. Backend packages are listed in `backend/requirements.txt` without pinned versions. The backend defaults to the Groq model `llama-3.1-70b-versatile`; set `GROQ_MODEL` to another model available to your Groq account.
+### Customer
 
-## Getting started
+Customer accounts are created through the registration flow in the app.
 
-### Prerequisites
+## Problem Statement
 
-- Python 3.11
-- Node.js and npm
-- A Groq API key for AI lead analysis, assistant chat, and marketing copy
-- A Hugging Face access token for AI-generated marketing images
-- A MongoDB connection string for persistent data (optional for local exploration; the backend uses an in-memory `mongomock` database if it is omitted)
+Real-estate sales teams often receive many inbound customer inquiries with different budgets, preferred locations, timelines, financing requirements, property types, and concerns. Manually reading each lead, deciding who needs immediate attention, and drafting the next message can be slow and inconsistent.
 
-### 1. Configure the backend
+MASAL uses AI to organize incoming demand, highlight the right sales priorities, and help the salesperson respond more quickly and confidently.
 
-From the repository root, create and activate a virtual environment, install the backend dependencies, and copy the example environment file:
+## Solution
+
+```text
+Customer inquiry
+        ↓
+Structured lead data
+        ↓
+AI analysis
+        ↓
+Priority scoring
+        ↓
+Salesperson dashboard
+        ↓
+Conversational AI assistance
+        ↓
+Recommended sales action
+```
+
+The application collects each inquiry in a structured format, analyzes it with the Groq LLM, and stores AI-generated summary, intent, concerns, and recommended next steps alongside the lead. Salespeople can then review leads by priority, inspect details, and ask follow-up questions through the assistant.
+
+## Key Features
+
+### Customer features
+
+- Registration and login
+- Property inquiry submission
+- Inquiry history
+- Structured property requirements capture
+
+### Salesperson features
+
+- Salesperson authentication
+- Lead management
+- Search and filtering
+- Sorting by AI priority score
+- Lead expansion and details
+- AI lead analysis
+- Priority classification and score
+- Recommended next action
+- Suggested customer response
+- Global AI Sales Assistant
+- Lead-specific AI Assistant
+- Property inventory management
+- Property details
+- AI marketing post generation
+- Marketing image generation
+- Caption and hashtag generation
+
+## User Roles
+
+### Customer
+
+Customers can register and log in, then submit inquiries describing the property they want. Their inquiries are displayed in a customer dashboard and can be reviewed over time.
+
+### Salesperson
+
+Salespeople can review all leads, prioritize them, launch AI analysis, chat with assistant modes, and manage inventory and marketing assets.
+
+## Lead Data Collected
+
+Each lead stores the following fields in the current implementation:
+
+- Name
+- Location
+- Property requirement
+- Property type
+- BHK / size
+- Budget
+- Buying timeline
+- Purpose
+- Financing
+- Customer message
+- Additional structured metadata such as customer ID and created timestamp
+
+The Location field represents the desired property location or area where the customer wants to buy, not the customer's current residence.
+
+## AI Lead Analysis
+
+The backend AI service analyzes the complete lead record and produces these fields:
+
+- Summary
+- Intent
+- Key requirements
+- Concerns
+- Recommended next action
+- Suggested response
+- Priority
+- Priority score
+- Priority reason
+
+The analysis is based on the full lead context rather than a single field. It looks at the combined effect of location, budget, timeline, purpose, financing, and customer message.
+
+## AI Prioritization
+
+The AI prioritization model generates:
+
+- Priority: High / Medium / Low
+- Priority score: 0–100
+- Priority reason
+
+The current scoring is designed to reflect sales-readiness and urgency rather than rewarding only a larger budget. It evaluates:
+
+- Buying Timeline / Urgency
+- Purchase Intent
+- Requirement Clarity
+- Budget Clarity
+- Financing Readiness
+- Purpose Clarity
+- Customer Message / Engagement
+
+Priority ranges used in the app are:
+
+- High: 70–100
+- Medium: 40–69
+- Low: 0–39
+
+## Global AI Sales Assistant
+
+The Global Assistant is not limited to one selected lead. It can answer salesperson questions across the lead records available to the backend and is designed to operate as a working sales copilot.
+
+Example prompts include:
+
+- "Find a lead with Vivek"
+- "Show me the top 2 leads"
+- "Show me all high-priority leads"
+- "How many leads need follow-up?"
+- "Compare Rahul and Vivek"
+- "Which leads are looking for properties in Bengaluru?"
+- "Which of them are using loans?"
+- "What is Rahul's budget?"
+- "Which lead should I contact next?"
+
+### Architecture
+
+```text
+User Query
+    ↓
+Conversation History / Reference Resolution
+    ↓
+Query Planner
+    ↓
+Structured Retrieval Plan
+    ↓
+Fresh MongoDB Retrieval
+    ↓
+Relevant Lead Context
+    ↓
+Groq LLM
+    ↓
+Natural Language Response
+    ↓
+Markdown Renderer
+    ↓
+Salesperson
+```
+
+Important implementation detail: every Global Chat turn performs fresh retrieval against the current query. Previous retrieval limits do not carry forward automatically. For example, a previous request for "top 2 leads" does not restrict a later query such as "Compare Rahul and Priya". The later question triggers a fresh retrieval search and resolves the named leads independently.
+
+## Global Chat + Context Window Strategy
+
+The Global Assistant maintains conversational continuity without blindly sending every lead to the LLM on every request. Conversation history is used to resolve references such as "him", "them", or "the second lead". The current query is then translated into a structured retrieval plan and the backend fetches only the relevant lead records from MongoDB. Only the context needed for the current question is passed to the LLM.
+
+This helps the system:
+
+- avoid unnecessary context
+- reduce token usage
+- reduce context-window pressure
+- improve response relevance
+- keep retrieval deterministic
+- prevent earlier query limits from contaminating future queries
+- allow cross-dataset questions over the lead records available to the backend
+
+Conversation history provides conversational context. Database retrieval provides factual lead context. Those two concepts are intentionally separate.
+
+## Query Planning
+
+The Query Planner is responsible for translating natural-language requests into a structured retrieval plan instead of answering directly. In the current implementation, it extracts values such as:
+
+- intent
+- locations
+- priority filters
+- target lead names
+- requested numeric limits
+- conversational references
+
+Guidance implemented in the backend is strict:
+
+- Numeric limits are applied only when the user explicitly asks for them.
+- "Top 2 leads" => limit = 2
+- "Top 5 leads" => limit = 5
+- "Show all high-priority leads" => no arbitrary limit
+- "Compare Rahul and Priya" => retrieve the explicitly named leads without inheriting a previous limit
+
+## Entity / Name Resolution
+
+The Global Assistant supports:
+
+- case-insensitive matching
+- partial-name matching
+- full-name matching
+- conversational references
+
+Example:
+
+- User asks: "Find Rahul"
+- Database contains: "Rahul Sharma"
+- The assistant can resolve the partial name to the correct lead record.
+
+Name matching uses a case-insensitive regular-expression search over the lead records. If a partial name could match multiple records, review the results and clarify the intended person rather than assuming that a single match is guaranteed.
+
+## Lead-Specific AI Assistant
+
+The salesperson can open an AI assistant scoped to a single selected lead. In this mode, the selected lead becomes the conversation boundary.
+
+```text
+Selected Lead ID
+    ↓
+Complete Lead Context
+    ↓
+Conversation History
+    ↓
+Current User Query
+    ↓
+Groq LLM
+    ↓
+Lead-specific Response
+```
+
+Examples of supported topics in lead-scoped chat:
+
+- budget
+- location
+- property requirement
+- BHK / size
+- buying timeline
+- purpose
+- financing
+- customer message
+- concerns
+- priority
+- priority reason
+- recommended next action
+- suggested response
+- call preparation
+- follow-up messaging
+
+Lead-specific chat is intentionally scoped to that lead and must not leak information from another lead. For example, while inside Rahul Sharma's lead chat, questions such as "Compare Rahul with Arjun" or "What about Priya?" are not allowed to pull in another lead's context in that lead-scoped conversation.
+
+## AI Marketing Post Generation
+
+The salesperson can select a property from inventory and generate marketing content. The backend uses the Groq model to create:
+
+- marketing caption
+- hashtags
+- image prompt
+
+Then Hugging Face Inference with FLUX is used to generate the visual marketing image. The property details are overlaid programmatically in the browser to keep factual details accurate rather than depending on the image model to render text inside the image.
+
+Current UI actions include:
+
+- copy caption
+- copy hashtags
+- regenerate
+- download image
+
+## Technical Architecture
+
+```text
+Frontend
+React + TypeScript + Vite
+        │
+        │ REST API
+        ↓
+FastAPI Backend
+        │
+        ├── Authentication
+        ├── Lead Management
+        ├── AI Analysis
+        ├── Query Planning
+        ├── Global Chat
+        ├── Lead Chat
+        └── Inventory
+        │
+        ├──────────────→ MongoDB Atlas or mongomock
+        │
+        └──────────────→ Groq API
+                              │
+                              ↓
+                            LLM
+```
+
+For marketing images:
+
+```text
+FastAPI
+   ↓
+Groq
+   ↓
+Marketing content + image prompt
+   ↓
+Hugging Face FLUX
+   ↓
+Generated property marketing visual
+```
+
+## Tech Stack
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- Tailwind CSS
+- shadcn-inspired local component system
+- React Router
+- React Markdown
+
+### Backend
+
+- Python
+- FastAPI
+- Pydantic
+- PyMongo
+- Uvicorn
+
+### AI
+
+- Groq API / Groq Python SDK
+- Hugging Face Inference
+- FLUX image generation
+
+### Database
+
+- MongoDB Atlas
+- mongomock for local fallback when no MongoDB URI is configured
+
+### Deployment
+
+- Vercel
+- Render
+
+## Project Structure
+
+```text
+MASAL/
+├── README.md
+├── .gitignore
+├── backend/
+│   ├── .env.example
+│   ├── requirements.txt
+│   ├── uploads/
+│   └── app/
+│       ├── config.py
+│       ├── database.py
+│       ├── main.py
+│       ├── routes/
+│       │   ├── auth.py
+│       │   ├── chat.py
+│       │   ├── inventory.py
+│       │   └── leads.py
+│       ├── schemas/
+│       │   ├── ai_analysis.py
+│       │   ├── inventory.py
+│       │   ├── lead.py
+│       │   └── user.py
+│       └── services/
+│           └── ai_service.py
+└── frontend/
+    ├── package.json
+    ├── package-lock.json
+    ├── vercel.json
+    ├── vite.config.ts
+    ├── public/
+    └── src/
+        ├── App.tsx
+        ├── components/
+        ├── context/
+        ├── layouts/
+        ├── lib/
+        ├── pages/
+        ├── services/
+        └── main.tsx
+```
+
+## Application Flow
+
+1. A customer registers or logs in.
+2. The customer submits a property inquiry with desired location, requirement, budget, and timeline.
+3. The backend stores the lead in MongoDB.
+4. The salesperson reviews leads in the dashboard and uses search, filters, and AI priority scores.
+5. An individual lead can be analyzed with AI to generate a summary, concerns, and recommended action.
+6. The salesperson can ask global or lead-scoped questions through the AI assistants.
+7. Inventory can be added and managed for marketing workflows.
+8. A property can be processed into a marketing caption, hashtags, and custom AI-generated image.
+
+## API / Backend Overview
+
+The FastAPI backend exposes routes under `/api` for:
+
+- authentication (`/api/auth`)
+- leads (`/api/leads`)
+- AI chat (`/api/chat`)
+- inventory (`/api/inventory`)
+
+Key backend behavior:
+
+- MongoDB connection is initialized at startup.
+- If `MONGODB_URI` is absent, the app uses `mongomock` for local fallback.
+- `/health` returns service health status.
+- `/uploads` serves uploaded property images from the configured upload directory.
+- AI analysis and chat calls require Groq credentials to be configured.
+
+## Database
+
+MASAL uses MongoDB for persistent lead, user, and inventory data. The current implementation stores structured customer requirements and AI-generated lead analysis results as part of the lead document where available.
+
+The app also supports a local fallback using `mongomock` when no `MONGODB_URI` is configured. Secret values such as connection strings and API keys are not included in the repository.
+
+## Local Development Setup
+
+### Backend
 
 ```powershell
 cd backend
@@ -56,132 +457,120 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Edit `backend/.env` and set the service credentials and database connection you want to use:
-
-| Variable | Required for | Notes |
-|---|---|---|
-| `MONGODB_URI` | Persistent storage | Leave empty to use the temporary in-memory database. |
-| `DATABASE_NAME` | MongoDB storage | Defaults to `masal`. |
-| `FRONTEND_URL` | Browser access | Defaults to `http://localhost:5173`. |
-| `GROQ_API_KEY` | AI features | Required for lead analysis, assistants, and marketing copy. |
-| `GROQ_MODEL` | AI features | Defaults to `llama-3.1-70b-versatile`. |
-| `HUGGINGFACE_API_KEY` | Marketing image generation | Required to generate the image; other Groq-backed marketing copy also requires `GROQ_API_KEY`. |
-| `SALES_DEMO_EMAIL` / `SALES_DEMO_PASSWORD` | Optional salesperson demo login | Both must be set to enable the demo account; keep the password private. |
-| `UPLOAD_DIR` | Uploaded property images | Defaults to the local `uploads` directory. |
-
-Start the API from the `backend` directory:
+Then configure the variables in `backend/.env` and start the API:
 
 ```powershell
 uvicorn app.main:app --reload --port 8005
 ```
 
-The API root is `http://localhost:8005/`; health and interactive API documentation are available at `http://localhost:8005/health` and `http://localhost:8005/docs`.
+The backend serves:
 
-### 2. Start the frontend
+- `http://localhost:8005/`
+- `http://localhost:8005/health`
+- `http://localhost:8005/docs`
 
-In a second terminal, from the repository root:
+### Frontend
+
+In a second terminal:
 
 ```powershell
 cd frontend
-npm ci
+npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite (normally `http://localhost:5173`). The frontend uses `http://localhost:8005/api` by default; set `VITE_API_BASE_URL` in `frontend/.env` if the backend API is hosted elsewhere. This URL must include the `/api` prefix.
+The frontend is typically served at `http://localhost:5173` and uses `http://localhost:8005/api` by default. If the backend is hosted elsewhere, update `VITE_API_BASE_URL` in `frontend/.env`.
 
-To create a production frontend build or run the linter:
+## Environment Variables
 
-```powershell
-npm run build
-npm run lint
+### Backend
+
+```env
+MONGODB_URI=
+DATABASE_NAME=masal
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.1-70b-versatile
+HUGGINGFACE_API_KEY=
+FRONTEND_URL=http://localhost:5173
+SALES_DEMO_EMAIL=
+SALES_DEMO_PASSWORD=
+UPLOAD_DIR=uploads
+```
+
+These values must be supplied through local environment configuration or deployment environment variables. Do not commit real secrets to the repository.
+
+### Frontend
+
+```env
+VITE_API_BASE_URL=http://localhost:8005/api
 ```
 
 ## Deployment
 
-Deploy the frontend and backend as separate services. The repository contains Vercel SPA rewrites in `frontend/vercel.json`; no production service URLs or credentials are committed.
+The project is deployed as two separate services:
 
-### Frontend — Vercel
+### Frontend
 
-Create a Vercel project for this repository and configure:
+- Platform: Vercel
+- Production URL: https://masal-one.vercel.app/login
 
-| Setting | Value |
-|---|---|
-| Root Directory | `frontend` |
-| Framework Preset | Vite |
-| Install Command | `npm ci` |
-| Build Command | `npm run build` |
-| Output Directory | `dist` |
-| Node.js Version | `20.19+` or `22.12+` |
+### Backend
 
-Set `VITE_API_BASE_URL` in the Vercel project’s Production environment to `https://YOUR-RENDER-DOMAIN/api`. Vite embeds `VITE_*` values in browser assets, so this variable must contain only the public API base URL, never a secret. Rebuild/redeploy after changing it.
+- Platform: Render
+- Production URL: https://masal-bud4.onrender.com
 
-### Backend — Render
-
-Create a Render web service from this repository and configure:
-
-| Setting | Value |
-|---|---|
-| Root Directory | `backend` |
-| Runtime | Python |
-| Python Version | `3.11.9` |
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| Health Check Path | `/health` |
-
-Configure backend variables in the Render service’s Environment settings; copy the names and safe placeholders from `backend/.env.example`. Set `MONGODB_URI`, `GROQ_API_KEY`, and `HUGGINGFACE_API_KEY` to the actual private values in Render’s dashboard. Set `FRONTEND_URL` to `https://YOUR-VERCEL-DOMAIN` (or a comma-separated list of exact allowed frontend origins), and set `DATABASE_NAME` if you want a database name other than `masal`. Set both `SALES_DEMO_EMAIL` and `SALES_DEMO_PASSWORD` only if you need the optional demo salesperson login. Render provides `PORT`; do not hard-code it.
-
-`FRONTEND_URL` is an allow-list, not an authentication mechanism. Local development origins remain enabled by the backend. Do not use a wildcard origin for production.
-
-Property uploads are stored on the backend filesystem. Render’s ordinary filesystem is ephemeral, so attach a persistent disk mounted at `/var/data` and set `UPLOAD_DIR=/var/data/uploads` if uploaded images must survive restarts and deploys. Without persistent storage, uploaded files can be lost.
-
-### Database and AI providers
-
-- **MongoDB Atlas:** Create a database user with only the required database permissions, select the `masal` database (or configure `DATABASE_NAME`), and set `MONGODB_URI` as a private Render variable. Allow the Render service’s outbound IP addresses in Atlas Network Access; do not expose the database to all IPs as a shortcut. The backend checks connectivity during startup and returns database-unavailable responses if it cannot connect.
-- **Groq:** Store the API key only as `GROQ_API_KEY` in Render. The model is selected with `GROQ_MODEL`; the backend uses a 30-second request timeout.
-- **Hugging Face:** Store the access token only as `HUGGINGFACE_API_KEY` in Render. The InferenceClient uses a 60-second timeout for FLUX.1-schnell image generation.
-
-### Security and remaining production work
-
-The backend now hashes newly registered passwords and moves legacy plaintext passwords to PBKDF2 hashes after a successful login. The former hard-coded salesperson demo password was present in earlier public source history; removing it from current code does not erase it from GitHub history. Treat it as exposed and rotate/revoke it before enabling any demo account.
-
-**Do not use this deployment with real customer data yet.** Frontend role checks are client-side only, and the API routes do not enforce authenticated identity or ownership for customer/lead data. Add server-side authentication and authorization before public production use. A successful `/health` response verifies process liveness only; it does not promise that MongoDB or AI providers are available.
-
-## Local deployment checks
-
-From the repository root:
-
-```powershell
-cd frontend
-npm ci
-npm run build
-npm run lint
-cd ..\backend
-python -m pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8005
-```
-
-Then open `http://localhost:8005/health` and verify it returns `{"status":"ok"}`. To exercise persistent storage and AI features locally, configure the backend variables in `backend/.env`; do not commit that file.
-
-## Demo account and security
-
-The optional salesperson demo account uses [sales@masal.com](mailto:sales@masal.com); configure its email and password privately using `SALES_DEMO_EMAIL` and `SALES_DEMO_PASSWORD`. Leave both variables empty to disable this login. The former hard-coded demo password is present in earlier public Git history; treat it as exposed and rotate it. The current backend hashes registered passwords, and upgrades legacy plaintext password records after a successful login.
-
-Keep real API keys and database credentials in local environment files or deployment secrets; do not commit them. The checked-in `.env.example` files contain blank secret values and safe configuration placeholders only.
-
-## Repository layout
+The deployment relationship is:
 
 ```text
-backend/
-  app/
-    routes/       FastAPI authentication, lead, inventory, and chat endpoints
-    schemas/      Pydantic request and response models
-    services/     Groq analysis, assistant, and marketing generation
-  requirements.txt
-frontend/
-  src/
-    components/   Shared UI and salesperson assistant components
-    context/      Client-side authentication state
-    pages/        Customer and salesperson screens
-    services/     API request helpers
-  package.json
+GitHub main branch
+       ↓
+Vercel → frontend deployment
+
+GitHub main branch
+       ↓
+Render → FastAPI deployment
 ```
+
+Environment variables are configured separately for each deployment. The production frontend should point to the deployed backend API, not to a local development `VITE_API_BASE_URL` value.
+
+## Security Considerations
+
+- Secrets are supplied through environment variables, not hard-coded into the app.
+- API keys and database credentials should never be committed to Git.
+- Customer and lead data are treated as untrusted input when passed to the LLM.
+- Retrieved database content must not be interpreted as system instructions.
+- Lead-specific conversations remain scoped to the selected lead.
+- Prompt injection attempts should not expose system prompts, developer instructions, credentials, or internal implementation details.
+
+**Production limitation:** frontend route guards are client-side, and the current API does not consistently authenticate the caller or enforce customer/lead ownership before returning records. Do not use this deployment with real customer data until server-side authentication and authorization are implemented. The safeguards described above are design requirements and prompt protections, not a guarantee that sensitive information cannot be exposed.
+
+## AI Usage Disclosure
+
+AI development tools, including ChatGPT and GitHub Copilot/Antigravity, were used during planning, implementation, debugging, and documentation. The application itself uses the Groq API for lead analysis, lead prioritization, conversational assistance, and marketing content generation, and Hugging Face Inference with FLUX for property marketing image generation. AI-assisted code and generated outputs were reviewed and integrated as part of development.
+
+## Future Improvements
+
+The following are realistic future enhancements and are not currently presented as implemented features:
+
+- CRM integrations
+- richer analytics and sales dashboards
+- automated follow-up reminders
+- lead activity timelines
+- property recommendation matching
+- calendar integration
+- WhatsApp and email integrations
+- stronger production authentication
+- role-based access control
+- observability and monitoring
+
+## Author / Project Information
+
+Project: MASAL AI
+
+Purpose: AI-powered real-estate sales support for customer inquiries, lead prioritization, and inventory marketing.
+
+Repository: This project contains the current frontend and backend implementation for the MASAL application.
+
+## Final Note
+
+MASAL is designed as a practical AI-assisted sales workflow for real-estate teams: collect customer demand, analyze intent, prioritize outreach, provide conversational assistance, and generate marketing content for property inventory. The current implementation is a working application that reflects the repository as it exists today, rather than a hypothetical or future-state product.
