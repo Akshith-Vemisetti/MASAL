@@ -1,85 +1,41 @@
-import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { CustomerLayout } from '../../layouts/CustomerLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../../components/ui/card';
-import { FileText, Clock, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Send, History } from 'lucide-react';
 
 export function CustomerDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState({ total: 0, active: 0, completed: 0 });
-
-  useEffect(() => {
-    // Load mock data
-    const inquiries = JSON.parse(localStorage.getItem('masal_inquiries') || '[]');
-    const userInquiries = inquiries.filter((i: any) => i.userId === user?.id);
-    
-    setStats({
-      total: userInquiries.length,
-      active: userInquiries.filter((i: any) => i.status !== 'Completed').length,
-      completed: userInquiries.filter((i: any) => i.status === 'Completed').length,
-    });
-  }, [user]);
 
   return (
     <CustomerLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">
-            Hi, {user?.name} 👋
-          </h1>
-          <p className="text-text-secondary text-lg max-w-2xl">
-            Welcome to MASAL. Tell us what you're looking for and we'll help connect your requirement with the right opportunities.
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="max-w-2xl space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
+              Hi, {user?.name} 👋
+            </h1>
+            <p className="text-text-secondary text-lg md:text-xl leading-relaxed">
+              Welcome to MASAL. Tell us what you're looking for and we'll help connect your requirement with the right opportunities.
+            </p>
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="bg-surface border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-text-secondary">Total Submissions</CardTitle>
-              <FileText className="w-4 h-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-surface border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-text-secondary">Active Inquiries</CardTitle>
-              <Clock className="w-4 h-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{stats.active}</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-surface border-border">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-text-secondary">Completed</CardTitle>
-              <CheckCircle className="w-4 h-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-white">{stats.completed}</div>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+            <Link 
+              to="/customer/submit"
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-lg font-medium transition-all hover:scale-105"
+            >
+              <Send className="w-5 h-5" />
+              Submit New Inquiry
+            </Link>
+            <Link 
+              to="/customer/inquiries"
+              className="flex items-center gap-2 bg-surface hover:bg-surface/80 border border-border text-white px-8 py-3 rounded-lg font-medium transition-all hover:scale-105"
+            >
+              <History className="w-5 h-5 text-primary" />
+              View My Inquiries
+            </Link>
+          </div>
         </div>
-
-        {/* Future expansion area */}
-        <Card className="bg-surface border-border mt-8">
-          <CardHeader>
-            <CardTitle className="text-xl text-white">Recent Activity</CardTitle>
-            <CardDescription>Your latest interactions and updates.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {stats.total === 0 ? (
-              <div className="text-center py-12 text-text-secondary">
-                No inquiries submitted yet. Go to "Submit Inquiry" to get started.
-              </div>
-            ) : (
-              <div className="text-center py-8 text-text-secondary">
-                Recent inquiries will appear here when connected to the backend.
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </CustomerLayout>
   );

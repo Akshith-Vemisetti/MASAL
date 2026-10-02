@@ -19,9 +19,42 @@ export function SalespersonDashboard() {
   }, []);
 
   const totalLeads = leads.length;
-  const highPriority = leads.filter(l => l.ai_analysis?.priority === 'HIGH' || l.priority === 'HIGH').length;
-  const mediumPriority = leads.filter(l => l.ai_analysis?.priority === 'MEDIUM' || l.priority === 'MEDIUM').length;
-  const urgentTimeline = leads.filter(l => (l.buying_timeline || l.buyingTimeline || '').toLowerCase().includes('urgent')).length;
+  
+  const getNormalizedPriority = (lead: any) => {
+    return String(lead.ai_analysis?.priority || lead.priority || '').trim().toLowerCase();
+  };
+
+  const highPriority = leads.filter(l => getNormalizedPriority(l) === 'high').length;
+  const mediumPriority = leads.filter(l => getNormalizedPriority(l) === 'medium').length;
+
+  const isUnderThreeMonths = (timelineRaw: any) => {
+    const t = String(timelineRaw || '').trim().toLowerCase();
+    if (!t) return false;
+    
+    // Explicit cases mentioned by the user
+    if (t === 'immediate') return true;
+    if (t === 'within 1 month') return true;
+    if (t === 'within 2 months') return true;
+    if (t === '1 month') return true;
+    if (t === '2 months') return true;
+    if (t === '1') return true;
+    if (t === '2') return true;
+    if (t.includes('urgent')) return true; // keep existing logic safely
+    
+    // Explicit exclusions
+    if (t === 'within 3 months' || t === 'with in 3 months' || t === '3 months' || t === '3' || t.includes('3-6') || t.includes('6+')) return false;
+    
+    // Regex fallback to check if a single number < 3 appears before month
+    const match = t.match(/(\d+)\s*month/);
+    if (match) {
+      const months = parseInt(match[1], 10);
+      return months < 3;
+    }
+    
+    return false;
+  };
+
+  const urgentTimeline = leads.filter(l => isUnderThreeMonths(l.buying_timeline || l.buyingTimeline)).length;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -97,7 +130,7 @@ export function SalespersonDashboard() {
       {/* Recent Activity or AI Insights summary could go here */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <Card className="p-6">
-          <h3 className="text-lg font-semibold text-white mb-4">AI Pipeline Insights</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Key Insights</h3>
           <ul className="space-y-4">
             <li className="flex items-start gap-3">
               <div className="w-2 h-2 mt-2 rounded-full bg-primary"></div>

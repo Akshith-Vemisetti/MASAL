@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
-  Search, Filter, ChevronDown, ChevronUp, Bot,
+  Search, Filter, ChevronDown, ChevronUp, Bot, ArrowUpDown,
   MapPin, IndianRupee, Clock, Target, AlertTriangle, Sparkles
 } from 'lucide-react';
 import { Input } from '../../components/ui/input';
@@ -13,6 +13,7 @@ import { cn } from '../../lib/utils';
 export function LeadManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('ALL');
+  const [sortOption, setSortOption] = useState<string>('SCORE_DESC');
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null);
   const [chatLead, setChatLead] = useState<LeadType | null>(null);
 
@@ -47,18 +48,37 @@ export function LeadManagement() {
 
     // Filter by priority
     if (priorityFilter !== 'ALL') {
-      result = result.filter(lead => (lead.ai_analysis?.priority || lead.priority || 'UNKNOWN') === priorityFilter);
+      const normalizedFilter = priorityFilter.toLowerCase();
+      result = result.filter(lead => {
+        const priority = lead.ai_analysis?.priority || lead.priority || 'UNKNOWN';
+        const normalizedPriority = String(priority).trim().toLowerCase();
+        return normalizedPriority === normalizedFilter;
+      });
     }
 
-    // Sort by AI Score (Highest first)
+    // Sort
     result.sort((a, b) => {
       const scoreA = a.ai_analysis?.priority_score || a.score || 0;
       const scoreB = b.ai_analysis?.priority_score || b.score || 0;
-      return scoreB - scoreA;
+      const dateA = new Date(a.created_at || a.createdAt || 0).getTime();
+      const dateB = new Date(b.created_at || b.createdAt || 0).getTime();
+
+      switch (sortOption) {
+        case 'SCORE_DESC':
+          return scoreB - scoreA;
+        case 'SCORE_ASC':
+          return scoreA - scoreB;
+        case 'DATE_DESC':
+          return dateB - dateA;
+        case 'DATE_ASC':
+          return dateA - dateB;
+        default:
+          return 0;
+      }
     });
 
     return result;
-  }, [leads, searchTerm, priorityFilter]);
+  }, [leads, searchTerm, priorityFilter, sortOption]);
 
   const toggleExpand = (id: string) => {
     setExpandedLeadId(prev => prev === id ? null : id);
@@ -140,18 +160,40 @@ export function LeadManagement() {
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-text-secondary" />
-            <select
-              className="bg-background border border-border rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary"
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-            >
-              <option value="ALL">All Priorities</option>
-              <option value="HIGH">High Priority</option>
-              <option value="MEDIUM">Medium Priority</option>
-              <option value="LOW">Low Priority</option>
-            </select>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className={cn("w-4 h-4 shrink-0 transition-colors", priorityFilter !== 'ALL' ? "text-primary" : "text-text-secondary")} />
+              <div className="relative">
+                <select
+                  className="appearance-none bg-surface border border-border/50 hover:border-border rounded-md pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary min-w-[140px] cursor-pointer transition-colors"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                >
+                  <option className="bg-surface text-white py-1" value="ALL">All Priorities</option>
+                  <option className="bg-surface text-white py-1" value="HIGH">High Priority</option>
+                  <option className="bg-surface text-white py-1" value="MEDIUM">Medium Priority</option>
+                  <option className="bg-surface text-white py-1" value="LOW">Low Priority</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4 shrink-0 text-text-secondary" />
+              <div className="relative">
+                <select
+                  className="appearance-none bg-surface border border-border/50 hover:border-border rounded-md pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-primary min-w-[210px] cursor-pointer transition-colors"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                >
+                  <option className="bg-surface text-white py-1" value="SCORE_DESC">Priority / Score: High to Low</option>
+                  <option className="bg-surface text-white py-1" value="SCORE_ASC">Priority / Score: Low to High</option>
+                  <option className="bg-surface text-white py-1" value="DATE_DESC">Newest</option>
+                  <option className="bg-surface text-white py-1" value="DATE_ASC">Oldest</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+              </div>
+            </div>
           </div>
         </div>
       </Card>
