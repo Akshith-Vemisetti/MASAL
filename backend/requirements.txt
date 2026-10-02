@@ -7,3 +7,5 @@ pydantic[email]
 python-dotenv
 mongomock
 groq
+huggingface_hub
+Pillow
