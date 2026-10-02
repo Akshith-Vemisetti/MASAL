@@ -34,6 +34,7 @@ interface Message {
 }
 
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -154,6 +155,7 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
                 {msg.role === 'assistant' ? (
                   <div className="flex flex-col gap-1.5 break-words">
                     <ReactMarkdown 
+                      remarkPlugins={[remarkGfm]}
                       components={{
                         p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
                         ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 space-y-1" {...props} />,
@@ -162,10 +164,33 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
                         h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-3 mt-4 text-white" {...props} />,
                         h2: ({node, ...props}) => <h2 className="text-base font-bold mb-3 mt-4 text-white" {...props} />,
                         h3: ({node, ...props}) => <h3 className="text-sm font-bold mb-2 mt-4 text-white" {...props} />,
-                        strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />
+                        strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+                        table: ({node, ...props}) => (
+                          <div className="overflow-x-auto w-full mb-4 rounded-md border border-border">
+                            <table className="w-full text-sm text-left border-collapse" {...props} />
+                          </div>
+                        ),
+                        th: ({node, ...props}) => <th className="bg-surface/50 font-semibold p-2.5 border-b border-border" {...props} />,
+                        td: ({node, ...props}) => <td className="p-2.5 border-b border-border/50 align-top" {...props} />,
+                        pre: ({node, ...props}) => (
+                          <div className="overflow-x-auto w-full mb-4 rounded-md bg-surface border border-border">
+                            <pre className="p-3 text-sm" {...props} />
+                          </div>
+                        ),
+                        code: ({node, inline, className, children, ...props}: any) => {
+                          return inline ? (
+                            <code className="bg-surface/50 px-1.5 py-0.5 rounded text-primary text-xs font-mono" {...props}>
+                              {children}
+                            </code>
+                          ) : (
+                            <code className="text-xs font-mono" {...props}>
+                              {children}
+                            </code>
+                          );
+                        }
                       }}
                     >
-                      {msg.content}
+                      {msg.content.replace(/<br\s*\/?>/gi, '\n')}
                     </ReactMarkdown>
                   </div>
                 ) : (

@@ -66,27 +66,30 @@ LEAD CONTEXT:
 {structured_lead_context}
 
 RULES FOR RESPONDING:
-1. Determine the user's intent: FACT_LOOKUP, SUMMARY, ANALYSIS, CALL_SCRIPT, WHATSAPP_MESSAGE, OBJECTION_HANDLING, SALES_STRATEGY, OUT_OF_CONTEXT, etc.
-2. SHORT QUESTIONS (e.g. "budget?", "timeline?") -> SHORT ANSWERS (1-2 sentences). Just give the fact. DO NOT repeat the entire lead context.
-3. NORMAL QUESTIONS -> Concise, useful answer (short paragraph or a few bullets).
-4. DETAILED REQUESTS (e.g. "call script", "email", "strategy") -> Detailed, structured response, easy to scan.
-5. OUT OF CONTEXT: If the user asks something completely unrelated (e.g., "What is Python?", "What about another person?"), DO NOT hallucinate a connection to this lead. Answer: "That's outside {lead_name}'s context. This chat is focused on {lead_name}'s inquiry. You can use Global Chat for general questions."
-6. MISSING INFO: If the requested information is not in the context, say "The lead details don't specify..." Do not invent facts.
-7. FALSE CERTAINTY: Distinguish between facts from the lead and your suggestions/inferences.
-8. DO NOT AUTOMATICALLY ADD EXTRA WORK: Do not offer unprompted extras (e.g., "Would you like a call script?") unless asked. Keep it conversational.
+1. ONLY answer questions based on the provided lead context and conversation history.
+2. DO NOT assume the user wants to contact the lead immediately or search for properties. Wait for their instructions. If they just say "hi", ask them what they want to know about {lead_name}.
+3. If the user asks about a DIFFERENT person, lead, or general knowledge (e.g. "What is Python?", "What about Srishanth?"), state clearly: "I can only help with {lead_name} in this conversation. I don't have access to other leads from this lead-specific chat."
+4. DO NOT invent facts or hallucinate if the context doesn't contain the answer. Just say the details don't specify.
+5. Provide concise answers for short questions, and detailed answers for requests like drafting messages or strategies.
+6. False Certainty: Distinguish between facts from the lead and your suggestions/inferences.
 """
     else:
         # global mode
+        import re
         from app.services.ai_service import determine_query_plan
         messages_dict = [{"role": m.role, "content": m.content} for m in req.messages]
         plan = determine_query_plan(messages_dict)
         
         if plan.category == "OTHER":
-            return {"reply": "I’m MASAL AI, your real-estate sales assistant. I can help with leads, priorities, customer requirements, pipeline insights, and follow-ups. Please ask me something related to your sales data."}
+            return {"reply": "I can help with MASAL's leads, customers, properties, inventory, and sales-related questions."}
             
         if plan.category == "POTENTIAL_PROMPT_INJECTION":
             return {"reply": "I can help with your real-estate leads, pipeline, priorities, and follow-ups, but I can't provide internal instructions, credentials, or hidden system information."}
         
+        if plan.target_names:
+            name_regex = "|".join([re.escape(name) for name in plan.target_names])
+            plan.mongo_filter["name"] = {"$regex": name_regex, "$options": "i"}
+
         if plan.query_type == "general":
             context_text = "No lead data was fetched because the query was determined to be general/unrelated to leads."
         elif plan.query_type == "count":
@@ -99,16 +102,7 @@ RULES FOR RESPONDING:
         else:
             try:
                 projection = {"_id": 0}
-                
-                fetch_all = False
-                if plan.fields_to_include and "all" in [f.lower() for f in plan.fields_to_include]:
-                    fetch_all = True
-                
-                if not fetch_all:
-                    for f in (plan.fields_to_include or []):
-                        projection[f] = 1
-                    # Make sure name is always included if not returning all fields, for context
-                    projection["name"] = 1
+
                 
                 cursor = db.leads.find(plan.mongo_filter, projection)
                 

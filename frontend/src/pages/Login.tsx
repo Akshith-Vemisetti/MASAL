@@ -12,14 +12,14 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Please fill in all fields');
       return;
@@ -31,7 +31,7 @@ export function Login() {
       // The backend handles the hardcoded salesperson check as well.
       const user = await authApi.login({ email, password });
       login(user);
-      
+
       if (user.role === 'salesperson') {
         navigate('/salesperson');
       } else {
@@ -57,7 +57,7 @@ export function Login() {
             {error}
           </div>
         )}
-        
+
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -97,10 +97,23 @@ export function Login() {
         </Link>
       </div>
 
-      <div className="mt-8 p-4 rounded-md border border-border bg-surface/50 text-xs text-text-secondary text-left">
-        <p className="font-medium mb-1 text-white">Demo Credentials:</p>
-        <p>Salesperson: sales@masal.com / masal2024</p>
-        <p>Customer: Any email / Any password (auto-creates)</p>
+      <div className="mt-8 p-4 rounded-md border border-border bg-surface/50 text-xs text-text-secondary text-left flex flex-col gap-3">
+        <div>
+          <p className="font-medium mb-1 text-white">Demo Credentials:</p>
+          <p>Salesperson: sales@masal.com / masal2024</p>
+          <p>Customer: Any email / Any password (auto-creates)</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+          onClick={() => {
+            setEmail('sales@masal.com');
+            setPassword('masal2024');
+          }}
+        >
+          Continue as Salesperson
+        </Button>
       </div>
     </AuthLayout>
   );
