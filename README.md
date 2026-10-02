@@ -96,7 +96,7 @@ npm run lint
 
 ## Demo account and security
 
-The current backend contains a hard-coded salesperson demo login. Its credential is intentionally not reproduced in this public README. Treat the in-code demo credential as exposed, remove or rotate it before deploying, and do not use the current authentication implementation for production: registered passwords are stored without hashing, and the demo login is not configurable through environment variables.
+The salesperson demo account uses [sales@masal.com](mailto:sales@masal.com). Ask the project maintainer privately for the demo password; it is not published in this README. The current backend has a hard-coded demo login, so treat its password as exposed and rotate or remove it before deployment. Do not use the current authentication implementation for production: registered passwords are stored without hashing, and the demo login is not configurable through environment variables.
 
 Keep real API keys and database credentials in local environment files or deployment secrets; do not commit them. The checked-in `.env.example` files are templates and should contain placeholders only.
 
