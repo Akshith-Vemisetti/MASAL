@@ -4,8 +4,10 @@ from datetime import datetime
 import uuid
 from app.schemas.lead import LeadCreate, LeadResponse
 from app.database import get_db
+import logging
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
+logger = logging.getLogger(__name__)
 
 @router.post("", response_model=LeadResponse)
 def create_lead(lead: LeadCreate):
@@ -70,7 +72,11 @@ def analyze_lead(lead_id: str):
     try:
         analysis = analyze_lead_with_ai(lead)
     except ValueError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Lead analysis failed (%s).", type(e).__name__)
+        raise HTTPException(
+            status_code=502,
+            detail="Lead analysis failed. Check AI service configuration and try again.",
+        )
         
     db.leads.update_one(
         {"id": lead_id},
@@ -98,6 +104,6 @@ def analyze_all_leads():
             )
             analyzed_leads.append(db.leads.find_one({"id": lead["id"]}))
         except Exception as e:
-            print(f"Failed to analyze lead {lead['id']}: {e}")
+            logger.error("Lead analysis failed for lead %s (%s).", lead["id"], type(e).__name__)
             
     return analyzed_leads

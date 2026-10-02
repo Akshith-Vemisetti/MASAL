@@ -5,11 +5,14 @@ import uuid
 import os
 import base64
 from pydantic import BaseModel
+import logging
 
 from app.schemas.inventory import InventoryCreate, InventoryResponse, InventoryUpdate, MarketingPostResponse
 from app.database import get_db
+from app.config import settings
 
 router = APIRouter(prefix="/api/inventory", tags=["inventory"])
+logger = logging.getLogger(__name__)
 
 class ImageUploadRequest(BaseModel):
     filename: str
@@ -25,14 +28,15 @@ def upload_image(request: ImageUploadRequest):
         header, encoded = request.data.split(",", 1) if "," in request.data else ("", request.data)
         file_extension = request.filename.split('.')[-1]
         new_filename = f"{uuid.uuid4().hex}.{file_extension}"
-        filepath = os.path.join("uploads", new_filename)
+        filepath = os.path.join(settings.upload_dir, new_filename)
         
         with open(filepath, "wb") as f:
             f.write(base64.b64decode(encoded))
             
         return {"url": f"/uploads/{new_filename}"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Image upload failed: {str(e)}")
+        logger.error("Image upload failed (%s).", type(e).__name__)
+        raise HTTPException(status_code=400, detail="Image upload failed. Check the image data and try again.")
 
 @router.post("", response_model=InventoryResponse)
 def create_inventory(inventory: InventoryCreate):
@@ -126,4 +130,8 @@ def generate_marketing(inventory_id: str):
         result = generate_marketing_post(inv)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("Marketing post generation failed (%s).", type(e).__name__)
+        raise HTTPException(
+            status_code=502,
+            detail="Marketing generation failed. Check AI service configuration and try again.",
+        )

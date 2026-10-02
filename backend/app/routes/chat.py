@@ -4,8 +4,10 @@ from pydantic import BaseModel
 from app.database import get_db
 from app.services.ai_service import chat_with_assistant
 import json
+import logging
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+logger = logging.getLogger(__name__)
 
 class ChatMessage(BaseModel):
     role: str
@@ -89,13 +91,11 @@ RULES FOR RESPONDING:
             context_text = "No lead data was fetched because the query was determined to be general/unrelated to leads."
         elif plan.query_type == "count":
             try:
-                print(f"Executing count query on db.leads with filter: {plan.mongo_filter}")
                 count = db.leads.count_documents(plan.mongo_filter)
                 context_text = f"The database returned a count of {count} leads matching the criteria."
-                print(f"Count result: {count}")
             except Exception as e:
-                print(f"Error in count query: {e}")
-                context_text = f"Failed to execute count query: {e}"
+                logger.error("Lead count query failed (%s).", type(e).__name__)
+                context_text = "The lead count query failed; no count is available."
         else:
             try:
                 projection = {"_id": 0}
@@ -110,12 +110,6 @@ RULES FOR RESPONDING:
                     # Make sure name is always included if not returning all fields, for context
                     projection["name"] = 1
                 
-                print(f"Executing find on db.leads")
-                print(f"Filter: {plan.mongo_filter}")
-                print(f"Projection: {projection}")
-                print(f"Sort: {plan.sort_field} ({plan.sort_order})")
-                print(f"Limit: {plan.limit}")
-                        
                 cursor = db.leads.find(plan.mongo_filter, projection)
                 
                 if plan.sort_field:
@@ -126,7 +120,6 @@ RULES FOR RESPONDING:
                     cursor = cursor.limit(plan.limit)
                     
                 leads = list(cursor)
-                print(f"Retrieved {len(leads)} leads.")
                 
                 if not leads:
                     context_text = "The database returned 0 matching leads."
@@ -134,10 +127,8 @@ RULES FOR RESPONDING:
                     limit_str = f" (limited to {plan.limit} max)" if plan.limit and plan.limit > 0 else ""
                     context_text = f"The database returned {len(leads)} leads matching the criteria{limit_str}:\n{json.dumps(leads, default=str)}"
             except Exception as e:
-                print(f"Error in find query: {e}")
-                context_text = f"Failed to execute database query: {e}"
-
-        print("Sending context to Groq...")
+                logger.error("Lead query failed (%s).", type(e).__name__)
+                context_text = "The lead query failed; no lead data is available."
 
         system_prompt_override = f"""You are MASAL AI, an expert real estate sales assistant.
 This is the Global Chat. You answer questions across all leads or general real estate questions.
@@ -166,7 +157,7 @@ RULES:
         reply = chat_with_assistant(recent_messages, context_text, system_prompt_override)
         return {"reply": reply}
     except Exception as e:
-        print(f"Chat error: {e}")
+        logger.error("Assistant chat failed (%s).", type(e).__name__)
         # Graceful fallback based on structured data if LLM fails
         if req.mode == "global" and 'leads' in locals() and leads:
             fallback = "### Quick Answer (Fallback Mode)\n\nI experienced a temporary connection issue, but here is the data you requested:\n\n"
@@ -178,4 +169,7 @@ RULES:
         elif req.mode == "lead" and 'lead' in locals() and lead:
             return {"reply": f"### Quick Answer (Fallback Mode)\n\nI experienced a temporary connection issue. However, {lead.get('name', 'this lead')} is looking for a {lead.get('property_requirement', 'property')} in {lead.get('location', 'N/A')} with a budget of {lead.get('budget', 'N/A')}."}
         
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=502,
+            detail="The AI assistant is temporarily unavailable. Please try again.",
+        )

@@ -4,6 +4,7 @@ import { ArrowLeft, Edit2, Trash2, MapPin, IndianRupee, Sparkles, Building2, Cop
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { inventoryApi } from '../../services/inventoryApi';
+import { API_ORIGIN } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 export function InventoryDetails() {
@@ -167,11 +168,11 @@ export function InventoryDetails() {
             {inventory.images && inventory.images.length > 0 ? (
               <div className="grid grid-cols-2 gap-1">
                 <div className="col-span-2 h-64 md:h-96">
-                  <img src={`http://127.0.0.1:8005${inventory.images[0]}`} alt="Main Property" className="w-full h-full object-cover rounded-md" />
+                  <img src={`${API_ORIGIN}${inventory.images[0]}`} alt="Main Property" className="w-full h-full object-cover rounded-md" />
                 </div>
                 {inventory.images.slice(1, 3).map((img: string, idx: number) => (
                   <div key={idx} className="h-32 md:h-48">
-                    <img src={`http://127.0.0.1:8005${img}`} alt="Property" className="w-full h-full object-cover rounded-md" />
+                    <img src={`${API_ORIGIN}${img}`} alt="Property" className="w-full h-full object-cover rounded-md" />
                   </div>
                 ))}
               </div>

@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { inventoryApi } from '../../services/inventoryApi';
+import { API_ORIGIN } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 const propertyTypes = ['Apartment', 'Villa', 'Independent House', 'Plot', 'Office', 'Shop', 'Commercial Space', 'Other'];
@@ -298,7 +299,7 @@ export function AddInventory() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             {formData.images.map((url, idx) => (
               <div key={idx} className="relative aspect-square rounded-md overflow-hidden group border border-border">
-                <img src={`http://127.0.0.1:8005${url}`} alt="Property" className="w-full h-full object-cover" />
+                <img src={`${API_ORIGIN}${url}`} alt="Property" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                   <X className="w-4 h-4" />
                 </button>

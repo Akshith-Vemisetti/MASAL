@@ -1,13 +1,14 @@
 import json
-import urllib.request
-import urllib.error
 import base64
+import logging
 from groq import Groq
 from app.config import settings
 from app.schemas.ai_analysis import LeadAnalysis
 
 from pydantic import BaseModel
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 class GlobalQueryPlan(BaseModel):
     category: str
@@ -91,7 +92,7 @@ GUIDELINES:
         data = json.loads(response_text)
         return GlobalQueryPlan(**data)
     except Exception as e:
-        print(f"Planner failed: {e}")
+        logger.error("AI query planning failed (%s).", type(e).__name__)
         return GlobalQueryPlan(
             category="OTHER",
             query_type="general",
@@ -103,7 +104,7 @@ GUIDELINES:
             response_length_guideline="moderate"
         )
 
-client = Groq(api_key=settings.groq_api_key) if settings.groq_api_key else None
+client = Groq(api_key=settings.groq_api_key, timeout=30.0) if settings.groq_api_key else None
 
 def analyze_lead_with_ai(lead_dict: dict) -> LeadAnalysis:
     if not client:
@@ -190,7 +191,8 @@ Provide the response as a JSON object matching the following structure:
         analysis = LeadAnalysis(**data)
         return analysis
     except Exception as e:
-        raise ValueError(f"Failed to generate or parse AI response: {e}")
+        logger.error("Lead analysis failed (%s).", type(e).__name__)
+        raise ValueError("Lead analysis failed") from e
 
 def chat_with_assistant(messages: list, context_text: str = "", system_prompt_override: str = None) -> str:
     if not client:
@@ -212,7 +214,8 @@ def chat_with_assistant(messages: list, context_text: str = "", system_prompt_ov
         )
         return response.choices[0].message.content
     except Exception as e:
-        raise ValueError(f"Failed to chat with AI: {e}")
+        logger.error("AI chat request failed (%s).", type(e).__name__)
+        raise ValueError("AI chat failed") from e
 
 def generate_marketing_post(property_dict: dict) -> dict:
     if not client:
@@ -276,7 +279,7 @@ Provide the response as a JSON object matching exactly this structure:
         import io
         
         try:
-            hf_client = InferenceClient(token=hf_api_key)
+            hf_client = InferenceClient(token=hf_api_key, timeout=60.0)
             image = hf_client.text_to_image(
                 data.get("image_prompt", "Premium real estate property, highly detailed, professional photography"),
                 model="black-forest-labs/FLUX.1-schnell"
@@ -287,9 +290,11 @@ Provide the response as a JSON object matching exactly this structure:
             image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
             data['image_base64'] = f"data:image/png;base64,{image_base64}"
         except Exception as e:
-            raise ValueError(f"Hugging Face API error: {e}")
+            logger.error("Hugging Face image generation failed (%s).", type(e).__name__)
+            raise ValueError("Hugging Face image generation failed") from e
             
         return data
         
     except Exception as e:
-        raise ValueError(f"Failed to generate marketing post: {e}")
+        logger.error("Marketing post generation failed (%s).", type(e).__name__)
+        raise ValueError("Marketing post generation failed") from e

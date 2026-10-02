@@ -5,6 +5,7 @@ import { Building2, Plus, MapPin, IndianRupee } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { inventoryApi } from '../../services/inventoryApi';
+import { API_ORIGIN } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 export function InventoryList() {
@@ -65,7 +66,7 @@ export function InventoryList() {
             <Card key={item.id} className="overflow-hidden border-border/50 hover:border-border transition-colors flex flex-col">
               <div className="h-48 bg-surface border-b border-border/50 relative">
                 {item.images && item.images.length > 0 ? (
-                  <img src={`http://127.0.0.1:8005${item.images[0]}`} alt={item.title} className="w-full h-full object-cover" />
+                  <img src={`${API_ORIGIN}${item.images[0]}`} alt={item.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-text-muted">
                     <Building2 className="w-8 h-8 opacity-50" />

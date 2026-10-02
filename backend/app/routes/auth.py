@@ -1,9 +1,39 @@
-from fastapi import APIRouter, HTTPException, status
-from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
+import base64
+import hashlib
+import hmac
+import secrets
+from fastapi import APIRouter, HTTPException
+from app.config import settings
+from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.database import get_db
 import uuid
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+PASSWORD_HASH_ITERATIONS = 310_000
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, PASSWORD_HASH_ITERATIONS)
+    salt_text = base64.urlsafe_b64encode(salt).decode()
+    digest_text = base64.urlsafe_b64encode(digest).decode()
+    return f"pbkdf2_sha256${PASSWORD_HASH_ITERATIONS}${salt_text}${digest_text}"
+
+
+def _verify_password(password: str, stored_value: str) -> tuple[bool, bool]:
+    if stored_value.startswith("pbkdf2_sha256$"):
+        try:
+            algorithm, iterations, salt_text, digest_text = stored_value.split("$", 3)
+            if algorithm != "pbkdf2_sha256":
+                return False, False
+            salt = base64.urlsafe_b64decode(salt_text.encode())
+            expected = base64.urlsafe_b64decode(digest_text.encode())
+            actual = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, int(iterations))
+            return hmac.compare_digest(actual, expected), False
+        except (ValueError, TypeError):
+            return False, False
+
+    return hmac.compare_digest(stored_value.encode(), password.encode()), True
 
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate):
@@ -19,7 +49,7 @@ def register(user: UserCreate):
         "id": str(uuid.uuid4()),
         "name": user.name,
         "email": user.email,
-        "password_hash": user.password, # Plaintext for task 3 demo, in prod use bcrypt
+        "password_hash": _hash_password(user.password),
         "role": "customer"
     }
 
@@ -38,18 +68,33 @@ def login(user: UserLogin):
     if db is None:
         raise HTTPException(status_code=503, detail="Database connection unavailable")
 
-    # Hardcoded Salesperson login bypass
-    if user.email == "sales@masal.com" and user.password == "masal2024":
+    if (
+        settings.sales_demo_email
+        and settings.sales_demo_password
+        and hmac.compare_digest(user.email.casefold().encode(), settings.sales_demo_email.casefold().encode())
+        and hmac.compare_digest(user.password.encode(), settings.sales_demo_password.encode())
+    ):
         return UserResponse(
             id="sales-1",
             name="Sarah Jenkins",
-            email="sales@masal.com",
+            email=settings.sales_demo_email,
             role="salesperson"
         )
 
     db_user = db.users.find_one({"email": user.email})
-    if not db_user or db_user.get("password_hash") != user.password:
+    stored_password = db_user.get("password_hash") if db_user else None
+    if not stored_password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    password_valid, needs_rehash = _verify_password(user.password, stored_password)
+    if not password_valid:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if needs_rehash:
+        db.users.update_one(
+            {"id": db_user["id"]},
+            {"$set": {"password_hash": _hash_password(user.password)}},
+        )
 
     return UserResponse(
         id=db_user["id"],
