@@ -31,5 +31,12 @@ export const leadsApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+  getChatHistory: async (mode: string, lead_id?: string) => {
+    let url = `/chat/history?mode=${mode}`;
+    if (lead_id) {
+      url += `&lead_id=${lead_id}`;
+    }
+    return fetchApi(url);
   }
 };

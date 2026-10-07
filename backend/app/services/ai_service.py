@@ -273,3 +273,87 @@ Provide the response as a JSON object matching exactly this structure:
     except Exception as e:
         logger.error("Marketing post generation failed (%s).", type(e).__name__)
         raise ValueError("Marketing post generation failed") from e
+def match_leads_to_property(property_dict: dict, leads_list: list) -> dict:
+    if not client:
+        raise ValueError("GROQ_API_KEY is not configured")
+        
+    clean_property = {k: v for k, v in property_dict.items() if k != "ai_lead_matches"}
+    
+    slim_leads = []
+    for lead in leads_list:
+        slim_lead = {
+            "id": lead.get("id"),
+            "name": lead.get("name"),
+            "location": lead.get("location"),
+            "property_requirement": lead.get("property_requirement"),
+            "property_type": lead.get("property_type"),
+            "bhk_or_size": lead.get("bhk_or_size"),
+            "budget": lead.get("budget"),
+            "buying_timeline": lead.get("buying_timeline"),
+            "purpose": lead.get("purpose"),
+            "financing": lead.get("financing"),
+            "customer_message": lead.get("customer_message"),
+        }
+        if lead.get("ai_analysis"):
+            slim_lead["priority"] = lead["ai_analysis"].get("priority")
+            slim_lead["intent"] = lead["ai_analysis"].get("intent")
+            slim_lead["key_requirements"] = lead["ai_analysis"].get("key_requirements")
+            slim_lead["concerns"] = lead["ai_analysis"].get("concerns")
+        slim_leads.append(slim_lead)
+    
+    prompt = f"""
+You are an expert real estate matchmaker.
+Your task is to analyze ONE property against a list of active leads and determine the best matches.
+
+PROPERTY:
+{json.dumps(clean_property, default=str)}
+
+AVAILABLE LEADS:
+{json.dumps(slim_leads, default=str)}
+
+INSTRUCTIONS:
+1. Find up to 3 best matching leads for this property.
+2. A property may receive 1, 2, 3, or potentially 0 recommendations if no lead is a meaningful match.
+3. Do NOT force a match if it's poor (e.g., budget is completely wrong, or completely wrong location).
+4. Evaluate holistically: consider location compatibility, budget, property type, BHK, timeline, purpose, financing, and customer message.
+5. Match score should be 0-100. High match (>80) should only be given if budget and location match.
+6. Provide a 'why_match' explanation, specific 'matching_factors', 'concerns' (or mismatches), and a 'recommended_action' for the salesperson.
+
+Provide the response as a JSON object matching exactly this structure:
+{{
+  "recommendations": [
+    {{
+      "lead_id": "string",
+      "lead_name": "string",
+      "match_score": 90,
+      "why_match": "string",
+      "matching_factors": ["string", "string"],
+      "concerns": ["string"],
+      "recommended_action": "string"
+    }}
+  ]
+}}
+"""
+    
+    try:
+        response = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert real estate AI. Output only raw JSON matching the requested schema."
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model=settings.groq_model,
+            response_format={"type": "json_object"}
+        )
+        
+        response_text = response.choices[0].message.content
+        data = json.loads(response_text)
+        return data
+    except Exception as e:
+        logger.error("AI matching failed (%s).", type(e).__name__)
+        raise ValueError("AI matching failed") from e

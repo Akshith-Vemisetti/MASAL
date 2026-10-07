@@ -56,4 +56,16 @@ export const inventoryApi = {
     fetchApi(`/inventory/${encodeURIComponent(inventoryId)}/marketing-post`, {
       method: 'POST',
     }),
+
+  matchLeads: async (salespersonId: string, signal?: AbortSignal) =>
+    fetchApi(`/inventory/match-leads?${new URLSearchParams({ salesperson_id: salespersonId })}`, {
+      method: 'POST',
+      signal,
+    }),
+
+  rematchLeads: async (inventoryId: string, salespersonId: string, signal?: AbortSignal) =>
+    fetchApi(`/inventory/${encodeURIComponent(inventoryId)}/rematch-leads?${new URLSearchParams({ salesperson_id: salespersonId })}`, {
+      method: 'POST',
+      signal,
+    }),
 };

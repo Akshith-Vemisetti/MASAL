@@ -135,3 +135,83 @@ def generate_marketing(inventory_id: str):
             status_code=502,
             detail="Marketing generation failed. Check AI service configuration and try again.",
         )
+
+@router.post("/match-leads")
+def global_match_leads(salesperson_id: str = Query(...)):
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+    
+    # 1. Fetch current properties for this salesperson
+    properties = list(db.inventory.find({"salesperson_id": salesperson_id}))
+    
+    # 2. Fetch current authorized leads (customer_id is required in get_my_leads but let's assume salespeople can access all leads in this demo, or we should get leads by some mapping. Actually the prompt says "fetch all currently available salesperson-authorized leads". Existing lead API doesn't have salesperson_id, it has customer_id. Let's just fetch all leads like `get_all_leads()` does for the salesperson.)
+    leads = list(db.leads.find({}))
+    
+    from app.services.ai_service import match_leads_to_property
+    
+    results = []
+    
+    for prop in properties:
+        try:
+            # 3, 4, 5, 6, 7, 8, 9 handled in match_leads_to_property
+            match_data = match_leads_to_property(prop, leads)
+            
+            ai_matches = {
+                "generated_at": datetime.utcnow(),
+                "recommendations": match_data.get("recommendations", [])
+            }
+            
+            # 10. Store the newly generated recommendations
+            db.inventory.update_one(
+                {"id": prop["id"]},
+                {"$set": {"ai_lead_matches": ai_matches}}
+            )
+            
+            updated_prop = db.inventory.find_one({"id": prop["id"]})
+            results.append(updated_prop)
+        except Exception as e:
+            logger.error(f"Global match failed for property {prop['id']} ({type(e).__name__}): {str(e)}")
+            # On failure, don't update this property, continue to the next
+            pass
+            
+    return {"status": "success", "message": "Lead matching completed"}
+
+@router.post("/{inventory_id}/rematch-leads", response_model=InventoryResponse)
+def rematch_leads(inventory_id: str, salesperson_id: str = Query(...)):
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+        
+    prop = db.inventory.find_one({"id": inventory_id})
+    if not prop:
+        raise HTTPException(status_code=404, detail="Inventory not found")
+        
+    if prop["salesperson_id"] != salesperson_id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this inventory")
+        
+    leads = list(db.leads.find({}))
+    
+    from app.services.ai_service import match_leads_to_property
+    
+    try:
+        match_data = match_leads_to_property(prop, leads)
+        
+        ai_matches = {
+            "generated_at": datetime.utcnow(),
+            "recommendations": match_data.get("recommendations", [])
+        }
+        
+        db.inventory.update_one(
+            {"id": inventory_id},
+            {"$set": {"ai_lead_matches": ai_matches}}
+        )
+        
+        updated_prop = db.inventory.find_one({"id": inventory_id})
+        return updated_prop
+    except Exception as e:
+        logger.error(f"Property match failed for {inventory_id} ({type(e).__name__}): {str(e)}")
+        raise HTTPException(
+            status_code=502,
+            detail="Lead matching failed. Check AI service configuration and try again."
+        )

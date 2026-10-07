@@ -5,6 +5,7 @@ from app.database import get_db
 from app.services.ai_service import chat_with_assistant
 import json
 import logging
+from datetime import datetime
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 logger = logging.getLogger(__name__)
@@ -17,6 +18,26 @@ class ChatRequest(BaseModel):
     messages: List[ChatMessage]
     mode: str
     lead_id: Optional[str] = None
+
+@router.get("/history")
+def get_chat_history(mode: str, lead_id: Optional[str] = None):
+    db = get_db()
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
+    
+    query = {"salesperson_id": "sales-1", "mode": mode}
+    if mode == "lead":
+        if not lead_id:
+            raise HTTPException(status_code=400, detail="lead_id required")
+        query["lead_id"] = lead_id
+    else:
+        query["lead_id"] = None
+
+    conv = db.conversations.find_one(query, {"_id": 0})
+    if conv and "messages" in conv:
+        return {"messages": conv["messages"]}
+    return {"messages": []}
+
 
 @router.post("")
 def chat_endpoint(req: ChatRequest):
@@ -149,6 +170,30 @@ RULES:
     
     try:
         reply = chat_with_assistant(recent_messages, context_text, system_prompt_override)
+        
+        query = {"salesperson_id": "sales-1", "mode": req.mode}
+        if req.mode == "lead":
+            query["lead_id"] = req.lead_id
+        else:
+            query["lead_id"] = None
+            
+        updated_messages = [{"role": m.role, "content": m.content} for m in req.messages]
+        updated_messages.append({"role": "assistant", "content": reply})
+        
+        db.conversations.update_one(
+            query,
+            {
+                "$set": {
+                    "messages": updated_messages,
+                    "updated_at": datetime.utcnow()
+                },
+                "$setOnInsert": {
+                    "created_at": datetime.utcnow()
+                }
+            },
+            upsert=True
+        )
+
         return {"reply": reply}
     except Exception as e:
         logger.error("Assistant chat failed (%s).", type(e).__name__)

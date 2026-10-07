@@ -31,11 +31,25 @@ class InventoryCreate(InventoryBase):
 class InventoryUpdate(InventoryBase):
     pass
 
+class AILeadMatchRecommendation(BaseModel):
+    lead_id: str
+    lead_name: str
+    match_score: int
+    why_match: str
+    matching_factors: List[str]
+    concerns: List[str]
+    recommended_action: str
+
+class AILeadMatches(BaseModel):
+    generated_at: datetime
+    recommendations: List[AILeadMatchRecommendation]
+
 class InventoryResponse(InventoryBase):
     id: str
     salesperson_id: str
     created_at: datetime
     updated_at: datetime
+    ai_lead_matches: Optional[AILeadMatches] = None
 
 class MarketingPostResponse(BaseModel):
     caption: str

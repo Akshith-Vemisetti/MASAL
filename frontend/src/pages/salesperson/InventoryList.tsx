@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, Plus, MapPin, IndianRupee } from 'lucide-react';
+import { Building2, Plus, MapPin, IndianRupee, Sparkles, X, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { inventoryApi } from '../../services/inventoryApi';
@@ -13,6 +13,9 @@ export function InventoryList() {
   const navigate = useNavigate();
   const [inventory, setInventory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [matching, setMatching] = useState(false);
+  const [matchStatus, setMatchStatus] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -31,6 +34,41 @@ export function InventoryList() {
     }
   };
 
+  const handleMatchLeads = async () => {
+    if (!user?.id) return;
+    setMatching(true);
+    setMatchStatus(null);
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      await inventoryApi.matchLeads(user.id, abortControllerRef.current.signal);
+      setMatchStatus('✓ Lead matching updated successfully!');
+      fetchInventory(); // refresh list
+      setTimeout(() => setMatchStatus(null), 3000);
+    } catch (err: any) {
+      if (err.name === 'AbortError' || err.message.includes('aborted')) {
+        setMatchStatus('Matching cancelled.');
+      } else {
+        const errorMsg = err.message || 'Failed to match leads.';
+        if (errorMsg.toLowerCase().includes('token limit')) {
+           alert('Sorry, token limit exceeded. Please try again later.');
+        } else {
+           setMatchStatus(`Error: ${errorMsg}`);
+        }
+      }
+      setTimeout(() => setMatchStatus(null), 5000);
+    } finally {
+      setMatching(false);
+      abortControllerRef.current = null;
+    }
+  };
+
+  const handleCancelMatch = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
   if (loading) {
     return <div className="text-white py-8">Loading inventory...</div>;
   }
@@ -41,14 +79,42 @@ export function InventoryList() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-white mb-2">My Inventory</h1>
           <p className="text-text-secondary">Manage your property listings.</p>
+          {matchStatus && (
+            <div className={`mt-2 text-sm ${matchStatus.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
+              {matchStatus}
+            </div>
+          )}
         </div>
-        <Button
-          onClick={() => navigate('/salesperson/inventory/add')}
-          className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Property
-        </Button>
+        <div className="flex items-center gap-3">
+          {matching ? (
+            <Button
+              onClick={handleCancelMatch}
+              variant="outline"
+              className="border-red-500/50 text-red-500 hover:bg-red-500/10 flex items-center gap-2 group"
+              title="Cancel Matching"
+            >
+              <div className="relative w-4 h-4 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 animate-spin absolute group-hover:opacity-0 transition-opacity" />
+                <X className="w-4 h-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              Agent is matching...
+            </Button>
+          ) : (
+            <Button
+              onClick={handleMatchLeads}
+              className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" /> ✨ AI Match Leads
+            </Button>
+          )}
+          <Button
+            onClick={() => navigate('/salesperson/inventory/add')}
+            className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Property
+          </Button>
+        </div>
       </div>
 
       {inventory.length === 0 ? (
