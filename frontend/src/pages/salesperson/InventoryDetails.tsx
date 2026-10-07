@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit2, Trash2, MapPin, IndianRupee, Sparkles, Building2, Copy, Download, RefreshCw, CheckCircle2, Users, Check, X, AlertTriangle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, MapPin, IndianRupee, Sparkles, Building2, Copy, Download, RefreshCw, CheckCircle2, Users, X, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { inventoryApi } from '../../services/inventoryApi';
