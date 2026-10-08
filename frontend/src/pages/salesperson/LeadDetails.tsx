@@ -316,28 +316,6 @@ export function LeadDetails() {
                     </div>
                   </div>
 
-                  {/* Scoring breakdown (from actual analysis if available) */}
-                  {lead.ai_analysis?.score_breakdown && (
-                    <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-5 border-t border-slate-100">
-                      {[
-                        { label: 'Timeline', score: lead.ai_analysis.score_breakdown.timeline, max: 30, icon: <Clock className="w-5 h-5 text-orange-500" />, bg: 'bg-orange-50', border: 'border-orange-100' },
-                        { label: 'Purchase Intent', score: lead.ai_analysis.score_breakdown.intent, max: 20, icon: <CheckCircle className="w-5 h-5 text-primary" />, bg: 'bg-primary/10', border: 'border-primary/20' },
-                        { label: 'Requirements', score: lead.ai_analysis.score_breakdown.requirement_clarity, max: 15, icon: <FileText className="w-5 h-5 text-blue-500" />, bg: 'bg-blue-50', border: 'border-blue-100' },
-                        { label: 'Budget', score: lead.ai_analysis.score_breakdown.budget_clarity, max: 15, icon: <CreditCard className="w-5 h-5 text-rose-500" />, bg: 'bg-rose-50', border: 'border-rose-100' },
-                        { label: 'Financing', score: lead.ai_analysis.score_breakdown.financing_readiness, max: 10, icon: <Building className="w-5 h-5 text-emerald-500" />, bg: 'bg-emerald-50', border: 'border-emerald-100' },
-                        { label: 'Purpose', score: lead.ai_analysis.score_breakdown.purpose_clarity, max: 5, icon: <User className="w-5 h-5 text-purple-500" />, bg: 'bg-purple-50', border: 'border-purple-100' },
-                        { label: 'Engagement', score: lead.ai_analysis.score_breakdown.engagement, max: 5, icon: <MessageSquare className="w-5 h-5 text-amber-500" />, bg: 'bg-amber-50', border: 'border-amber-100' }
-                      ].map((item, i) => (
-                        <div key={i} className="flex flex-col items-center text-center gap-1.5">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border mb-0.5 ${item.bg} ${item.border}`}>
-                            {item.icon}
-                          </div>
-                          <span className="text-[13px] font-semibold text-slate-700">{item.label}</span>
-                          <span className="text-[12px] text-slate-400 font-semibold">({item.score}/{item.max})</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
 

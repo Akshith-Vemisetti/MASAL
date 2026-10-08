@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Building2, LayoutDashboard, Users, Sparkles, Search, Bell, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -15,8 +15,26 @@ export function SalespersonLayout({ children }: SalespersonLayoutProps) {
   const location = useLocation();
   const [isGlobalChatOpen, setIsGlobalChatOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [isSidebarDropdownOpen, setIsSidebarDropdownOpen] = useState(false);
+  const [isHeaderDropdownOpen, setIsHeaderDropdownOpen] = useState(false);
+  
+  const sidebarDropdownRef = useRef<HTMLDivElement>(null);
+  const headerDropdownRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarDropdownRef.current && !sidebarDropdownRef.current.contains(event.target as Node)) {
+        setIsSidebarDropdownOpen(false);
+      }
+      if (headerDropdownRef.current && !headerDropdownRef.current.contains(event.target as Node)) {
+        setIsHeaderDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     const handleOpenChat = () => setIsGlobalChatOpen(true);
     window.addEventListener('open-global-chat', handleOpenChat);
 
@@ -98,17 +116,37 @@ export function SalespersonLayout({ children }: SalespersonLayoutProps) {
         </div>
 
         {/* User Profile Footer */}
-        <div className="p-4 m-4 bg-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer" onClick={handleLogout}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b21a8] to-[#4c1d95] flex items-center justify-center font-bold text-white shadow-inner">
-              {user?.name?.charAt(0).toUpperCase() || 'S'}
+        <div className="relative" ref={sidebarDropdownRef}>
+          <div 
+            className="p-4 m-4 bg-white/5 rounded-2xl flex items-center justify-between hover:bg-white/10 transition-colors cursor-pointer" 
+            onClick={() => setIsSidebarDropdownOpen(!isSidebarDropdownOpen)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6b21a8] to-[#4c1d95] flex items-center justify-center font-bold text-white shadow-inner">
+                {user?.name?.charAt(0).toUpperCase() || 'S'}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-white truncate max-w-[100px]">{user?.name || 'Salesperson'}</span>
+                <span className="text-xs text-gray-400 capitalize">{user?.role || 'Salesperson'}</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold text-white truncate max-w-[100px]">{user?.name || 'Sarah Jenkins'}</span>
-              <span className="text-xs text-gray-400">{user?.role || 'Salesperson'}</span>
-            </div>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isSidebarDropdownOpen ? 'rotate-180' : ''}`} />
           </div>
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          
+          {isSidebarDropdownOpen && (
+            <div className="absolute bottom-[calc(100%-1rem)] left-4 right-4 mb-2 bg-[#1a1e2d] border border-gray-800 rounded-xl shadow-xl overflow-hidden z-50">
+              <div className="px-4 py-3 border-b border-gray-800">
+                <p className="text-sm font-semibold text-white truncate">{user?.name || 'Salesperson'}</p>
+                <p className="text-xs text-gray-400 capitalize">{user?.email || 'salesperson@example.com'}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-sm text-red-400 hover:bg-white/5 transition-colors font-medium flex items-center gap-2"
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -133,19 +171,39 @@ export function SalespersonLayout({ children }: SalespersonLayoutProps) {
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            <div className="flex items-center gap-3 cursor-pointer">
-              <img src="/demo-building.jpg" alt="Profile" className="w-9 h-9 rounded-full object-cover shadow-sm" onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }} />
-              <div className="hidden w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                 {user?.name?.charAt(0).toUpperCase() || 'S'}
+            <div className="relative" ref={headerDropdownRef}>
+              <div 
+                className="flex items-center gap-3 cursor-pointer p-1.5 hover:bg-gray-100 rounded-full transition-colors pr-3"
+                onClick={() => setIsHeaderDropdownOpen(!isHeaderDropdownOpen)}
+              >
+                <img src="/demo-building.jpg" alt="Profile" className="w-9 h-9 rounded-full object-cover shadow-sm" onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }} />
+                <div className="hidden w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                   {user?.name?.charAt(0).toUpperCase() || 'S'}
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-sm font-bold text-gray-900">{user?.name || 'Salesperson'}</span>
+                  <span className="text-[11px] text-gray-500 font-medium capitalize">{user?.role || 'Salesperson'}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isHeaderDropdownOpen ? 'rotate-180' : ''}`} />
               </div>
-              <div className="flex flex-col items-end">
-                <span className="text-sm font-bold text-gray-900">{user?.name || 'Sarah Jenkins'}</span>
-                <span className="text-[11px] text-gray-500 font-medium capitalize">{user?.role || 'Salesperson'}</span>
-              </div>
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              
+              {isHeaderDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+                  <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'Salesperson'}</p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email || 'salesperson@example.com'}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors font-medium flex items-center gap-2"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>

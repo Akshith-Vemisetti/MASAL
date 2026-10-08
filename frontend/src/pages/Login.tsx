@@ -20,8 +20,14 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const { login, register } = useAuth();
+  const { user, login, register } = useAuth();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (user) {
+      navigate(user.role === 'salesperson' ? '/salesperson' : '/customer', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleComingSoon = (e: React.MouseEvent) => {
     e.preventDefault();
