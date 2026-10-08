@@ -12,6 +12,7 @@ import { LeadManagement } from './pages/salesperson/LeadManagement'
 import { InventoryList } from './pages/salesperson/InventoryList'
 import { AddInventory } from './pages/salesperson/AddInventory'
 import { InventoryDetails } from './pages/salesperson/InventoryDetails'
+import { LeadDetails } from './pages/salesperson/LeadDetails'
 import './App.css'
 
 function App() {
@@ -67,6 +68,16 @@ function App() {
               <ProtectedRoute allowedRole="salesperson">
                 <SalespersonLayout>
                   <LeadManagement />
+                </SalespersonLayout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/salesperson/leads/:id" 
+            element={
+              <ProtectedRoute allowedRole="salesperson">
+                <SalespersonLayout>
+                  <LeadDetails />
                 </SalespersonLayout>
               </ProtectedRoute>
             } 

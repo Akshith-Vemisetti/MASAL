@@ -141,6 +141,15 @@ Provide the response as a JSON object matching the following structure:
   "suggested_response": "str",
   "priority": "str",
   "priority_score": int,
+  "score_breakdown": {{
+    "timeline": int,
+    "intent": int,
+    "requirement_clarity": int,
+    "budget_clarity": int,
+    "financing_readiness": int,
+    "purpose_clarity": int,
+    "engagement": int
+  }},
   "priority_reason": "str"
 }}
 """
@@ -266,7 +275,7 @@ Provide the response as a JSON object matching exactly this structure:
             data['image_base64'] = f"data:image/png;base64,{image_base64}"
         except Exception as e:
             logger.error("Hugging Face image generation failed (%s).", type(e).__name__)
-            raise ValueError("Hugging Face image generation failed") from e
+            data['image_base64'] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/5+BAwAG/gM1l+cGEAAAAABJRU5ErkJggg=="
             
         return data
         
@@ -282,8 +291,8 @@ def match_leads_to_property(property_dict: dict, leads_list: list) -> dict:
     slim_leads = []
     for lead in leads_list:
         slim_lead = {
-            "id": lead.get("id"),
-            "name": lead.get("name"),
+            "lead_id": lead.get("id"),
+            "lead_name": lead.get("name"),
             "location": lead.get("location"),
             "property_requirement": lead.get("property_requirement"),
             "property_type": lead.get("property_type"),

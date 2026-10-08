@@ -1,6 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit2, Trash2, MapPin, IndianRupee, Sparkles, Building2, Copy, Download, RefreshCw, CheckCircle2, Users, X, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft, Edit2, Trash2, MapPin, Sparkles, Building2,
+  Copy, Download, RefreshCw, CheckCircle2, Users, AlertTriangle,
+  Loader2, Share2, Home, MessageSquare, BedDouble, Square, Car, Calendar, Info
+} from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { inventoryApi } from '../../services/inventoryApi';
@@ -27,11 +31,23 @@ export function InventoryDetails() {
   const [rematchStatus, setRematchStatus] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const fetchInventory = useCallback(async (inventoryId: string) => {
+    try {
+      const data = await inventoryApi.getInventory(inventoryId);
+      setInventory(data);
+    } catch (err: any) {
+      console.error(err);
+      setError('Failed to fetch inventory details.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (id) {
       fetchInventory(id);
     }
-  }, [id]);
+  }, [id, fetchInventory]);
 
   const handleRematchLeads = async () => {
     if (!id || !user?.id) return;
@@ -114,7 +130,7 @@ export function InventoryDetails() {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, canvas.height - 300, canvas.width, 300);
 
-      ctx.fillStyle = '#8B5CF6';
+      ctx.fillStyle = '#6C5DD3';
       ctx.beginPath();
       ctx.roundRect(padding, canvas.height - 200, 150, 40, 8);
       ctx.fill();
@@ -142,17 +158,6 @@ export function InventoryDetails() {
     img.src = marketingPost.image_base64;
   };
 
-  const fetchInventory = async (inventoryId: string) => {
-    try {
-      const data = await inventoryApi.getInventory(inventoryId);
-      setInventory(data);
-    } catch (err: any) {
-      setError('Failed to fetch inventory details.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this property?')) return;
 
@@ -161,393 +166,425 @@ export function InventoryDetails() {
       await inventoryApi.deleteInventory(id!, user!.id);
       navigate('/salesperson/inventory');
     } catch (err: any) {
+      console.error(err);
       setError('Failed to delete inventory.');
       setDeleting(false);
     }
   };
 
-  if (loading) return <div className="text-white py-8">Loading details...</div>;
-  if (error || !inventory) return <div className="text-red-400 py-8">{error || 'Inventory not found'}</div>;
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#F4F7FB]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#6C5DD3]" />
+      </div>
+    );
+  }
+
+  if (error || !inventory) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-[#F4F7FB]">
+        <div className="bg-red-50 text-red-600 p-6 rounded-xl border border-red-200 flex flex-col items-center max-w-md text-center shadow-sm">
+          <AlertTriangle className="w-10 h-10 mb-3 text-red-500" />
+          <h2 className="text-lg font-bold mb-2">Error Loading Property</h2>
+          <p>{error || 'Inventory not found'}</p>
+          <Button className="mt-4 bg-[#6C5DD3] text-white" onClick={() => navigate('/salesperson/inventory')}>
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/salesperson/inventory')} className="p-2 hover:bg-surface rounded-full text-text-secondary hover:text-white transition-colors">
-            <ArrowLeft className="w-5 h-5" />
+    <div className="min-h-screen bg-[#F4F7FB] text-[#2b2b2b] p-4 lg:p-8 animate-in fade-in duration-500">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <button
+            onClick={() => navigate('/salesperson/inventory')}
+            className="flex items-center text-[#6C5DD3] font-medium text-sm hover:underline mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back to Inventory
           </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary border border-primary/30">
-                {inventory.listing_type}
-              </span>
-              <span className="text-text-muted text-sm">{inventory.property_type}</span>
-            </div>
-            <h1 className="text-2xl font-bold text-white">{inventory.title}</h1>
-          </div>
+          <h1 className="text-2xl font-bold text-[#1a1a2e]">Property Details</h1>
+          <p className="text-sm text-[#5a607f]">View and manage property information and AI matches.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => navigate(`/salesperson/inventory/${id}/edit`)} className="border-border text-white">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            className="bg-white border-[#e4e4e4] text-[#5a607f] hover:bg-gray-50 hover:text-[#2b2b2b]"
+          >
+            <Share2 className="w-4 h-4 mr-2" /> Share Property
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate(`/salesperson/inventory/${id}/edit`)}
+            className="bg-white border-[#6C5DD3] text-[#6C5DD3] hover:bg-[#6C5DD3]/10"
+          >
             <Edit2 className="w-4 h-4 mr-2" /> Edit
           </Button>
-          <Button variant="outline" onClick={handleDelete} disabled={deleting} className="border-red-500/50 text-red-500 hover:bg-red-500/10">
-            <Trash2 className="w-4 h-4 mr-2" /> Delete
+          <Button
+            variant="outline"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="bg-white border-red-200 text-red-500 hover:bg-red-50"
+          >
+            {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />} Delete
           </Button>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-        {/* Left Column: Images & Details */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* LEFT COLUMN */}
+        <div className="lg:col-span-8 space-y-8">
+
           {/* Images Section */}
-          <Card className="overflow-hidden bg-surface/50 border-border/50 p-1">
+          <Card className="overflow-hidden bg-white border border-[#e4e4e4] shadow-sm rounded-2xl p-2 relative">
+            <div className="absolute top-4 left-4 z-10">
+              <span className="px-3 py-1.5 rounded-md text-xs font-bold bg-[#6C5DD3] text-white shadow-sm uppercase tracking-wider">
+                {inventory.listing_type}
+              </span>
+            </div>
+
             {inventory.images && inventory.images.length > 0 ? (
-              <div className="grid grid-cols-2 gap-1">
-                <div className="col-span-2 h-64 md:h-96">
-                  <img src={`${API_ORIGIN}${inventory.images[0]}`} alt="Main Property" className="w-full h-full object-cover rounded-md" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div className="md:col-span-2 aspect-[4/3] md:aspect-auto md:h-[400px]">
+                  <img src={`${API_ORIGIN}${inventory.images[0]}`} alt="Main Property" className="w-full h-full object-cover rounded-xl" />
                 </div>
-                {inventory.images.slice(1, 3).map((img: string, idx: number) => (
-                  <div key={idx} className="h-32 md:h-48">
-                    <img src={`${API_ORIGIN}${img}`} alt="Property" className="w-full h-full object-cover rounded-md" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-text-muted bg-surface rounded-md">
-                <Building2 className="w-12 h-12 mb-2 opacity-50" />
-                <span>No images uploaded</span>
-              </div>
-            )}
-          </Card>
-
-          {/* Details Card */}
-          <Card className="p-6 bg-surface/50 border-border/50">
-            <h2 className="text-xl font-semibold text-white mb-4">Property Details</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-              <div>
-                <p className="text-text-muted text-sm mb-1">Price</p>
-                <div className="flex items-center text-primary font-bold">
-                  <IndianRupee className="w-4 h-4" />
-                  <span>{inventory.price.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-text-muted text-sm mb-1">BHK</p>
-                <p className="text-white font-medium">{inventory.bhk}</p>
-              </div>
-              <div>
-                <p className="text-text-muted text-sm mb-1">Area</p>
-                <p className="text-white font-medium">{inventory.area} sqft</p>
-              </div>
-              <div>
-                <p className="text-text-muted text-sm mb-1">Location</p>
-                <p className="text-white font-medium line-clamp-1" title={`${inventory.location.locality}, ${inventory.location.city}`}>
-                  {inventory.location.locality}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 text-sm border-t border-border/50 pt-4 mb-6">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Furnishing</span>
-                <span className="text-white font-medium">{inventory.furnishing}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Parking</span>
-                <span className="text-white font-medium">{inventory.parking}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Floor</span>
-                <span className="text-white font-medium">{inventory.floor || '-'}/{inventory.total_floors || '-'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Possession</span>
-                <span className="text-white font-medium">{inventory.possession_status}</span>
-              </div>
-            </div>
-
-            {inventory.key_highlights && (
-              <div className="mb-6">
-                <h3 className="text-text-secondary font-medium mb-2">Key Highlights</h3>
-                <p className="text-white text-sm bg-surface p-3 rounded-md border border-border/50">
-                  {inventory.key_highlights}
-                </p>
-              </div>
-            )}
-
-            {inventory.description && (
-              <div>
-                <h3 className="text-text-secondary font-medium mb-2">Description</h3>
-                <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">
-                  {inventory.description}
-                </p>
-              </div>
-            )}
-          </Card>
-
-          {/* AI Match Leads Section */}
-          <Card className="p-6 bg-surface/50 border-border/50">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                  <Users className="w-5 h-5 text-purple-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-white">✨ Top Lead Recommendations</h2>
-                  {rematchStatus && (
-                    <p className={`text-sm mt-1 ${rematchStatus.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
-                      {rematchStatus}
-                    </p>
+                <div className="hidden md:flex flex-col gap-2 h-[400px]">
+                  {inventory.images.length > 1 ? (
+                    <img src={`${API_ORIGIN}${inventory.images[1]}`} alt="Property" className="w-full h-1/2 object-cover rounded-xl" />
+                  ) : (
+                    <div className="w-full h-1/2 bg-gray-100 rounded-xl" />
                   )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {rematching ? (
-                  <Button onClick={handleCancelRematch} variant="outline" size="sm" className="border-red-500/50 text-red-500 hover:bg-red-500/10 group" title="Cancel Matching">
-                    <div className="relative w-4 h-4 mr-2 flex items-center justify-center">
-                      <Loader2 className="w-4 h-4 animate-spin absolute group-hover:opacity-0 transition-opacity" />
-                      <X className="w-4 h-4 absolute opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    Agent is matching...
-                  </Button>
-                ) : (
-                  <Button onClick={handleRematchLeads} variant="outline" size="sm" className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10">
-                    <RefreshCw className="w-4 h-4 mr-2" /> 🔄 Re-match Leads
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {inventory.ai_lead_matches?.recommendations?.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {inventory.ai_lead_matches.recommendations.map((rec: any, idx: number) => (
-                  <div key={idx} className="bg-surface rounded-lg p-4 border border-border/50 hover:border-purple-500/30 transition-colors">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="text-lg font-medium text-white">{rec.lead_name}</h3>
-                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20 text-sm font-semibold">
-                        {rec.match_score}% Match
-                      </div>
-                    </div>
-                    <p className="text-sm text-text-secondary mb-4 leading-relaxed">{rec.why_match}</p>
-
-                    <div className="space-y-4 text-sm">
-                      <div>
-                        <h4 className="font-medium text-white mb-2 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-4 h-4 text-green-400" /> Matches
-                        </h4>
-                        <ul className="space-y-1.5 pl-5.5">
-                          {rec.matching_factors.map((factor: string, i: number) => (
-                            <li key={i} className="text-text-secondary flex items-start gap-2">
-                              <span className="text-green-400 mt-0.5">•</span> {factor}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {rec.concerns && rec.concerns.length > 0 && (
-                        <div>
-                          <h4 className="font-medium text-white mb-2 flex items-center gap-1.5">
-                            <AlertTriangle className="w-4 h-4 text-amber-400" /> Concerns
-                          </h4>
-                          <ul className="space-y-1.5 pl-5.5">
-                            {rec.concerns.map((concern: string, i: number) => (
-                              <li key={i} className="text-text-secondary flex items-start gap-2">
-                                <span className="text-amber-400 mt-0.5">•</span> {concern}
-                              </li>
-                            ))}
-                          </ul>
+                  {inventory.images.length > 2 ? (
+                    <div className="w-full h-1/2 relative rounded-xl overflow-hidden group cursor-pointer">
+                      <img src={`${API_ORIGIN}${inventory.images[2]}`} alt="Property" className="w-full h-full object-cover" />
+                      {inventory.images.length > 3 && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white font-bold text-xl group-hover:bg-black/60 transition-colors">
+                          +{inventory.images.length - 3}
                         </div>
                       )}
-
-                      <div className="pt-3 border-t border-border/50">
-                        <div className="text-purple-400 font-medium mb-1">Recommended Action:</div>
-                        <p className="text-white text-sm">{rec.recommended_action}</p>
-                      </div>
-
-                      <div className="pt-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate('/salesperson/leads')} className="text-xs">
-                          View Lead
-                        </Button>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <div className="w-full h-1/2 bg-gray-100 rounded-xl" />
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="text-center py-8 bg-surface rounded-lg border border-border/50 text-text-muted">
-                {rematching ? "Matching in progress..." : "No lead recommendations available for this property. Click Re-match to find matches."}
-              </div>
-            )}
-
-            {inventory.ai_lead_matches?.generated_at && (
-              <div className="mt-4 text-right text-xs text-text-muted">
-                Last matched: {new Date(inventory.ai_lead_matches.generated_at.endsWith('Z') ? inventory.ai_lead_matches.generated_at : inventory.ai_lead_matches.generated_at + 'Z').toLocaleString('en-IN', {
-                  day: 'numeric', month: 'short', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
-                })}
+              <div className="h-64 flex flex-col items-center justify-center text-[#5a607f] bg-gray-50 rounded-xl">
+                <Building2 className="w-12 h-12 mb-2 opacity-50 text-[#6C5DD3]" />
+                <span className="font-medium">No images uploaded</span>
               </div>
             )}
           </Card>
-        </div>
 
-        {/* Right Column: AI Marketing Placeholder & Amenities */}
-        <div className="space-y-6">
-
-          {/* FUTURE AI FEATURE PLACEHOLDER */}
-          <Card className="p-6 bg-gradient-to-br from-primary/10 to-purple-500/10 border-primary/20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-primary/20 blur-2xl w-24 h-24 rounded-full"></div>
-
-            <div className="flex items-center justify-between mb-4 relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/30">
-                  <Sparkles className="w-5 h-5 text-primary" />
+          {/* Main Info Box */}
+          <div className="px-2">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+              <div>
+                <h1 className="text-3xl font-bold text-[#1a1a2e] mb-2">{inventory.title}</h1>
+                <div className="flex items-center text-[#5a607f] mb-4 text-sm font-medium">
+                  <MapPin className="w-4 h-4 mr-1.5 text-[#6C5DD3]" />
+                  {inventory.location.locality}, {inventory.location.city}
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">AI Marketing Post</h2>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-full">
+                    {inventory.property_type}
+                  </span>
+                  <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded-full">
+                    {inventory.possession_status}
+                  </span>
                 </div>
               </div>
-              {marketingPost && (
-                <Button variant="outline" size="sm" onClick={handleGenerateMarketing} disabled={generatingMarketing} className="border-primary/50 text-primary hover:bg-primary/20">
-                  <RefreshCw className={`w-4 h-4 mr-2 ${generatingMarketing ? 'animate-spin' : ''}`} />
-                  Regenerate
-                </Button>
-              )}
+              <div className="text-left md:text-right">
+                <div className="text-3xl font-bold text-[#6C5DD3] flex items-center md:justify-end">
+                  ₹{inventory.price.toLocaleString('en-IN')}
+                </div>
+                <div className="text-sm text-[#5a607f] mt-1 font-medium">
+                  ₹{inventory.area ? Math.round(inventory.price / inventory.area).toLocaleString('en-IN') : 0} / sqft
+                </div>
+              </div>
             </div>
 
-            {!marketingPost ? (
-              <div className="relative z-10">
-                <p className="text-sm text-text-secondary mb-6">
-                  Automatically generate highly converting social media posts, captions, and hashtag strategies for this property using AI.
-                </p>
-
-                {marketingError && (
-                  <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-md">
-                    {marketingError}
-                  </div>
-                )}
-
-                <Button
-                  className="w-full bg-primary hover:bg-primary-hover text-white transition-colors"
-                  onClick={handleGenerateMarketing}
-                  disabled={generatingMarketing}
-                >
-                  {generatingMarketing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Generating your marketing post...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Marketing Post
-                    </>
-                  )}
-                </Button>
+            {/* Property Details Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 py-6 border-y border-[#e4e4e4] my-6">
+              <div className="flex flex-col">
+                <span className="text-xs text-[#5a607f] mb-1 flex items-center gap-1.5">
+                  <BedDouble className="w-3.5 h-3.5" /> BHK
+                </span>
+                <span className="font-bold text-[#2b2b2b]">{inventory.bhk}</span>
               </div>
-            ) : (
-              <div className="relative z-10 space-y-6 animate-in fade-in duration-500">
-                {/* Image Preview with HTML Overlay */}
-                <div className="relative rounded-lg overflow-hidden border border-border/50 group">
-                  <img src={marketingPost.image_base64} alt="Marketing" className="w-full aspect-square object-cover" />
+              <div className="flex flex-col border-l border-[#e4e4e4] pl-4">
+                <span className="text-xs text-[#5a607f] mb-1 flex items-center gap-1.5">
+                  <Square className="w-3.5 h-3.5" /> Area
+                </span>
+                <span className="font-bold text-[#2b2b2b]">{inventory.area} sqft</span>
+              </div>
+              <div className="flex flex-col border-l border-[#e4e4e4] pl-4">
+                <span className="text-xs text-[#5a607f] mb-1 flex items-center gap-1.5">
+                  <Home className="w-3.5 h-3.5" /> Furnishing
+                </span>
+                <span className="font-bold text-[#2b2b2b]">{inventory.furnishing}</span>
+              </div>
+              <div className="flex flex-col border-l md:border-none lg:border-solid lg:border-[#e4e4e4] pl-4 md:pl-0 lg:pl-4">
+                <span className="text-xs text-[#5a607f] mb-1 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" /> Floor
+                </span>
+                <span className="font-bold text-[#2b2b2b]">{inventory.floor || '-'}/{inventory.total_floors || '-'}</span>
+              </div>
+              <div className="flex flex-col border-l border-[#e4e4e4] pl-4">
+                <span className="text-xs text-[#5a607f] mb-1 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5" /> Parking
+                </span>
+                <span className="font-bold text-[#2b2b2b]">{inventory.parking}</span>
+              </div>
+              <div className="flex flex-col border-l border-[#e4e4e4] pl-4">
+                <span className="text-xs text-[#5a607f] mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" /> Possession
+                </span>
+                <span className="font-bold text-[#2b2b2b] line-clamp-1" title={inventory.possession_status}>{inventory.possession_status}</span>
+              </div>
+            </div>
 
-                  {/* Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-6">
-                    <span className="bg-primary text-white text-xs font-bold px-3 py-1.5 rounded w-max mb-3 uppercase tracking-wider">
-                      {inventory.listing_type}
-                    </span>
-                    <div className="text-white text-3xl font-bold mb-1 shadow-black drop-shadow-md">
-                      ₹{inventory.price.toLocaleString('en-IN')}
+            {/* Amenities */}
+            {inventory.amenities && inventory.amenities.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-[#1a1a2e] mb-4">Amenities</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {inventory.amenities.map((amenity: string) => (
+                    <div key={amenity} className="flex items-center gap-2 text-sm text-[#5a607f] bg-white p-3 rounded-lg border border-[#e4e4e4]">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                      <span className="truncate">{amenity}</span>
                     </div>
-                    <div className="text-white text-xl font-bold shadow-black drop-shadow-md">
-                      {inventory.bhk} {inventory.property_type}
-                    </div>
-                    <div className="text-gray-300 text-sm shadow-black drop-shadow-md">
-                      {inventory.location.locality}, {inventory.location.city}
-                    </div>
-                  </div>
-
-                  {/* Download Button */}
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button size="sm" onClick={downloadImage} className="bg-black/50 hover:bg-black/80 text-white backdrop-blur-sm border border-white/20">
-                      <Download className="w-4 h-4 mr-2" />
-                      Download
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-
-                {/* Caption */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-text-secondary">Caption</h3>
-                    <button
-                      onClick={() => copyToClipboard(marketingPost.caption, 'caption')}
-                      className="text-xs flex items-center text-primary hover:text-primary-hover transition-colors"
-                    >
-                      {copiedCaption ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-                      {copiedCaption ? 'Copied' : 'Copy'}
-                    </button>
-                  </div>
-                  <div className="bg-surface/80 p-3 rounded-md border border-border/50 text-sm text-white whitespace-pre-wrap max-h-48 overflow-y-auto">
-                    {marketingPost.caption}
-                  </div>
-                </div>
-
-                {/* Hashtags */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-text-secondary">Hashtags</h3>
-                    <button
-                      onClick={() => copyToClipboard(marketingPost.hashtags.join(' '), 'hashtags')}
-                      className="text-xs flex items-center text-primary hover:text-primary-hover transition-colors"
-                    >
-                      {copiedHashtags ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
-                      {copiedHashtags ? 'Copied' : 'Copy'}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {marketingPost.hashtags.map((tag: string, idx: number) => (
-                      <span key={idx} className="text-xs text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20">
-                        {tag.startsWith('#') ? tag : `#${tag}`}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
               </div>
             )}
-          </Card>
 
-          {/* Amenities List */}
-          {inventory.amenities && inventory.amenities.length > 0 && (
-            <Card className="p-6 bg-surface/50 border-border/50">
-              <h2 className="text-lg font-semibold text-white mb-4">Amenities</h2>
-              <div className="flex flex-wrap gap-2">
-                {inventory.amenities.map((amenity: string) => (
-                  <span key={amenity} className="px-3 py-1 bg-surface border border-border rounded-full text-xs text-text-secondary">
-                    {amenity}
-                  </span>
-                ))}
+            {/* Description */}
+            {inventory.description && (
+              <div className="mb-8">
+                <h3 className="text-lg font-bold text-[#1a1a2e] mb-4">Description</h3>
+                <div className="text-sm text-[#5a607f] whitespace-pre-wrap leading-relaxed bg-white p-6 rounded-xl border border-[#e4e4e4]">
+                  {inventory.description}
+                </div>
+              </div>
+            )}
+
+            {/* AI Marketing Analysis Placeholder (Coming Soon or Dummy, requested by UI ref but generated in right column actually) */}
+            {/* Since the screenshot showed "AI Marketing Analysis" on the left, we can put the generated marketing here if it exists, or just a coming soon placeholder if we prefer. The current codebase has the generator on the right. Let's keep generator on the right as a button, and if generated, show on the right. */}
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-4 space-y-6">
+
+          {/* Key Highlights */}
+          {inventory.key_highlights && (
+            <Card className="p-6 bg-white border border-[#e4e4e4] shadow-sm rounded-2xl">
+              <h3 className="text-md font-bold text-[#1a1a2e] mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#6C5DD3]" /> Key Highlights
+              </h3>
+              <div className="bg-[#F4F7FB] p-4 rounded-xl text-sm text-[#5a607f] leading-relaxed border border-[#e4e4e4]">
+                {inventory.key_highlights}
               </div>
             </Card>
           )}
 
-          {/* Location Details */}
-          <Card className="p-6 bg-surface/50 border-border/50">
-            <h2 className="text-lg font-semibold text-white mb-4">Location Map</h2>
-            <div className="flex items-start gap-3 mb-4">
-              <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="text-white text-sm font-medium">{inventory.location.locality}, {inventory.location.city}</p>
-                {inventory.location.address && (
-                  <p className="text-text-secondary text-xs mt-1">{inventory.location.address}</p>
-                )}
+          {/* AI Match Leads Section */}
+          <Card className="p-0 overflow-hidden bg-white border border-[#e4e4e4] shadow-sm rounded-2xl flex flex-col">
+            <div className="p-5 border-b border-[#e4e4e4] bg-gradient-to-r from-[#F4F7FB] to-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#6C5DD3]/10 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-[#6C5DD3]" />
+                </div>
+                <h2 className="text-md font-bold text-[#1a1a2e]">Top Lead Recommendations</h2>
               </div>
+              {rematching ? (
+                <button onClick={handleCancelRematch} className="text-[#6C5DD3] hover:text-[#5b4eb3] p-1 group relative">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                </button>
+              ) : (
+                <button onClick={handleRematchLeads} className="text-[#5a607f] hover:text-[#6C5DD3] p-1 transition-colors bg-white rounded-md shadow-sm border border-[#e4e4e4]">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
-            <div className="w-full h-32 bg-surface rounded-md border border-border flex items-center justify-center text-text-muted text-xs">
-              Map View Placeholder
+
+            <div className="p-5 flex-1 max-h-[600px] overflow-y-auto">
+              {rematchStatus && (
+                <div className={`text-xs mb-4 p-2 rounded-md ${rematchStatus.includes('Error') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                  {rematchStatus}
+                </div>
+              )}
+
+              {inventory.ai_lead_matches?.recommendations?.length > 0 ? (
+                <div className="space-y-4">
+                  {inventory.ai_lead_matches.recommendations.map((rec: any, idx: number) => (
+                    <div key={idx} className="bg-white rounded-xl p-4 border border-[#e4e4e4] hover:shadow-md transition-shadow relative overflow-hidden group">
+                      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#6C5DD3] to-[#4c3ab8]"></div>
+
+                      <div className="flex justify-between items-start mb-2 pl-2">
+                        <h3 className="font-bold text-[#1a1a2e]">{rec.lead_name}</h3>
+                        <div className="bg-[#e6f4ea] text-[#1e8e3e] px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap">
+                          {rec.match_score}% Match
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-[#5a607f] mb-3 pl-2 break-words whitespace-pre-wrap">
+                        {rec.why_match}
+                      </p>
+
+                      <div className="pl-2 space-y-1 mb-4">
+                        {rec.matching_factors?.map((factor: string, i: number) => (
+                          <div key={i} className="flex items-start gap-1.5 text-xs text-[#5a607f]">
+                            <CheckCircle2 className="w-3 h-3 text-[#1e8e3e] mt-0.5 shrink-0" />
+                            <span className="break-words">{factor}</span>
+                          </div>
+                        ))}
+                        {rec.concerns?.map((concern: string, i: number) => (
+                          <div key={`c-${i}`} className="flex items-start gap-1.5 text-xs text-[#5a607f]">
+                            <AlertTriangle className="w-3 h-3 text-orange-500 mt-0.5 shrink-0" />
+                            <span className="break-words">{concern}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {rec.recommended_action && (
+                        <div className="pl-2 mb-4">
+                          <div className="bg-[#6C5DD3]/5 border border-[#6C5DD3]/20 rounded-md p-2 flex gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-[#6C5DD3] shrink-0 mt-0.5" />
+                            <p className="text-xs text-[#1a1a2e] font-medium break-words">
+                              {rec.recommended_action}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 pl-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/salesperson/leads/${rec.lead_id}`)} className="flex-1 h-8 text-xs bg-white border-[#e4e4e4] text-[#2b2b2b] hover:bg-gray-50">
+                          View Lead
+                        </Button>
+                        <Button size="sm" className="h-8 w-8 p-0 bg-[#6C5DD3]/10 hover:bg-[#6C5DD3]/20 text-[#6C5DD3] shrink-0">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 text-[#5a607f] text-sm flex flex-col items-center">
+                  <Info className="w-8 h-8 text-gray-300 mb-2" />
+                  {rematching ? "Finding the best leads for this property..." : "No matches found yet. Click refresh to find potential buyers."}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* AI Marketing Post Generator */}
+          <Card className="p-6 bg-gradient-to-br from-[#6C5DD3]/5 to-transparent border border-[#e4e4e4] shadow-sm rounded-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#6C5DD3]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#6C5DD3]">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-md font-bold text-[#1a1a2e]">AI Marketing Copy</h2>
+                  <p className="text-xs text-[#5a607f]">Generate social media ready posts.</p>
+                </div>
+              </div>
+
+              {!marketingPost ? (
+                <div>
+                  {marketingError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg">
+                      {marketingError}
+                    </div>
+                  )}
+                  <Button
+                    className="w-full bg-[#6C5DD3] hover:bg-[#5b4eb3] text-white shadow-sm shadow-[#6C5DD3]/20 transition-all font-medium"
+                    onClick={handleGenerateMarketing}
+                    disabled={generatingMarketing}
+                  >
+                    {generatingMarketing ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating Magic...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4 mr-2" /> Generate New Marketing Copy</>
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  {/* Generated Image Preview */}
+                  <div className="relative rounded-xl overflow-hidden shadow-sm group">
+                    {(!marketingPost.image_base64 || marketingPost.image_base64 === "" || marketingPost.image_base64.includes("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/5+BAwAG/gM1l+cGEAAAAABJRU5ErkJggg==")) && (
+                      <div className="absolute top-2 left-2 right-2 bg-orange-100/90 backdrop-blur-sm text-orange-800 text-xs p-2.5 rounded-lg z-20 border border-orange-200 shadow-sm flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block mb-0.5">API Issue from Backend</span>
+                          Image generation failed due to token limits or server error. Showing default property image instead.
+                        </div>
+                      </div>
+                    )}
+                    <img 
+                      src={marketingPost.image_base64 && !marketingPost.image_base64.includes("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/5+BAwAG/gM1l+cGEAAAAABJRU5ErkJggg==") ? marketingPost.image_base64 : (inventory.images && inventory.images.length > 0 ? `${API_ORIGIN}${inventory.images[0]}` : 'https://placehold.co/600x600?text=No+Image+Available')} 
+                      alt="Marketing" 
+                      className="w-full aspect-square object-cover" 
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
+                      <div className="text-white font-bold text-xl drop-shadow-md">₹{inventory.price.toLocaleString('en-IN')}</div>
+                      <div className="text-white/90 text-sm drop-shadow-md">{inventory.bhk} {inventory.property_type}</div>
+                    </div>
+
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={downloadImage} className="w-8 h-8 bg-white/90 rounded-md flex items-center justify-center text-[#2b2b2b] hover:bg-white shadow-sm">
+                        <Download className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Generated Caption */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#2b2b2b]">Caption</span>
+                      <button onClick={() => copyToClipboard(marketingPost.caption, 'caption')} className="text-[#6C5DD3] hover:text-[#5b4eb3] text-xs font-medium flex items-center">
+                        {copiedCaption ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />} {copiedCaption ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-[#e4e4e4] text-xs text-[#5a607f] whitespace-pre-wrap max-h-32 overflow-y-auto">
+                      {marketingPost.caption}
+                    </div>
+                  </div>
+
+                  {/* Generated Hashtags */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#2b2b2b]">Hashtags</span>
+                      <button onClick={() => copyToClipboard(marketingPost.hashtags.join(' '), 'hashtags')} className="text-[#6C5DD3] hover:text-[#5b4eb3] text-xs font-medium flex items-center">
+                        {copiedHashtags ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />} {copiedHashtags ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {marketingPost.hashtags.map((tag: string, idx: number) => (
+                        <span key={idx} className="text-[10px] bg-[#6C5DD3]/10 text-[#6C5DD3] px-2 py-1 rounded-md font-medium">
+                          {tag.startsWith('#') ? tag : `#${tag}`}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button variant="outline" size="sm" onClick={handleGenerateMarketing} disabled={generatingMarketing} className="w-full text-xs bg-white border-[#e4e4e4] text-[#5a607f]">
+                    <RefreshCw className={`w-3 h-3 mr-1.5 ${generatingMarketing ? 'animate-spin' : ''}`} /> Regenerate
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
 

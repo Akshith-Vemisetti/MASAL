@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Bot, Loader2 } from 'lucide-react';
+import { X, Send, Bot, Loader2, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
 import { leadsApi } from '../../services/leadsApi';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export interface LeadType {
   id: string;
@@ -22,9 +24,10 @@ export interface LeadType {
 
 interface AIChatProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   mode: 'global' | 'lead';
   lead?: LeadType | null;
+  inline?: boolean;
 }
 
 interface Message {
@@ -33,10 +36,7 @@ interface Message {
   content: string;
 }
 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
-export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
+export function AIChat({ isOpen, onClose, mode, lead, inline = false }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -68,7 +68,7 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
                 ]);
               } else if (mode === 'lead' && lead) {
                 setMessages([
-                  { id: '1', role: 'assistant', content: `I've analyzed ${lead.name}'s requirement for a ${lead.propertyRequirement} in ${lead.location}. What would you like to know or draft?` }
+                  { id: '1', role: 'assistant', content: `I've analyzed ${lead.name}'s requirement for a ${lead.propertyRequirement} in ${typeof lead.location === 'string' ? lead.location : (lead.location as any)?.locality || 'Unknown'}. What would you like to know or draft?` }
                 ]);
               } else {
                 setMessages([]);
@@ -99,7 +99,7 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
        // Clear messages when closed so it fetches fresh when reopening
        setMessages([]);
     }
-  }, [isOpen, mode, lead?.id]);
+  }, [isOpen, mode, lead]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -147,70 +147,90 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
 
   return (
     <>
-      {/* Backdrop overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 bg-black/50 backdrop-blur-[2px] z-40 transition-opacity duration-300",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}
-        onClick={onClose}
-      />
+      {/* Backdrop overlay (only if not inline) */}
+      {!inline && (
+        <div
+          className={cn(
+            "fixed inset-0 bg-[#0A0B14]/20 backdrop-blur-[2px] z-40 transition-all duration-300",
+            isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={onClose}
+        />
+      )}
 
-      {/* Floating Panel */}
+      {/* Chat Panel */}
       <div
         className={cn(
-          "fixed z-50 flex flex-col bg-surface/95 backdrop-blur-xl border border-border shadow-2xl transition-all duration-300 ease-out overflow-hidden",
-          // Mobile: nearly full screen but slight margin
-          "top-2 right-2 bottom-2 left-2 rounded-3xl",
-          // Desktop: floating on the right
-          "sm:left-auto sm:top-4 sm:right-4 sm:bottom-4 sm:w-[420px] md:w-[480px]",
-          // Animation states
-          isOpen 
-            ? "translate-x-0 opacity-100 scale-100" 
-            : "translate-x-8 opacity-0 scale-95 pointer-events-none"
+          "flex flex-col overflow-hidden transition-all duration-300 ease-out",
+          inline 
+            ? "relative w-full h-full bg-white" 
+            : cn(
+                "fixed z-50 bg-white/95 backdrop-blur-xl border border-purple-200/50 shadow-[0_20px_60px_-15px_rgba(107,33,168,0.2)] top-4 right-4 bottom-4 left-4 rounded-[2rem]",
+                "sm:left-auto sm:w-[440px] md:w-[480px]",
+                isOpen 
+                  ? "translate-x-0 opacity-100 scale-100" 
+                  : "translate-x-8 opacity-0 scale-95 pointer-events-none"
+              )
         )}
       >
+        {/* Subtle background glows */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10 rounded-[2rem]">
+          <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[50%] bg-purple-200/30 blur-[80px] rounded-full" />
+          <div className="absolute -bottom-[20%] -right-[10%] w-[70%] h-[50%] bg-violet-200/30 blur-[80px] rounded-full" />
+          <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-purple-50/80 to-transparent" />
+        </div>
+
         {/* Header */}
-        <div className="flex flex-col border-b border-border/50 p-4 sm:p-5 bg-surface/50 z-10 shrink-0">
+        <div className={cn(
+          "flex flex-col p-4 sm:p-5 z-10 shrink-0 border-b border-purple-100/50"
+        )}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 text-white font-semibold">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/20 text-primary border border-primary/20 shadow-inner">
-                <Bot className="w-5 h-5" />
+            <div className="flex items-center gap-3 font-semibold text-slate-900">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 text-purple-700 shadow-sm border border-purple-200/50">
+                <Sparkles className="w-5 h-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[15px] leading-tight text-white/90">MASAL AI</span>
-                <span className="text-[11px] text-text-secondary font-medium tracking-wide mt-0.5">
-                  {mode === 'global' ? 'SALES ASSISTANT' : `LEAD ASSISTANT`}
+                <div className="flex items-center gap-2">
+                  <span className="text-[16px] leading-tight font-bold text-slate-800">MASAL AI</span>
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                  </span>
+                </div>
+                <span className="text-[12px] font-medium tracking-wide mt-0.5 text-slate-500">
+                  {mode === 'global' ? 'Sales Assistant' : `Lead Assistant`}
                 </span>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-text-secondary hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!inline && (
+              <button
+                onClick={onClose}
+                className="text-slate-400 hover:text-purple-700 hover:bg-purple-50 p-2 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
-
+          
+          {/* Tags under header for lead mode */}
           {mode === 'lead' && lead && (
-            <div className="text-xs text-text-secondary mt-4 flex items-center flex-wrap gap-2">
-              <span className="px-2.5 py-1 rounded-full bg-black/20 border border-white/5 shadow-sm text-slate-300">{lead.name.split(' ')[0]}</span>
-              <span className="px-2.5 py-1 rounded-full bg-black/20 border border-white/5 shadow-sm text-slate-300">{lead.propertyRequirement}</span>
-              <span className="px-2.5 py-1 rounded-full bg-black/20 border border-white/5 shadow-sm text-slate-300">{lead.budget}</span>
+            <div className="text-[11px] mt-4 flex items-center flex-wrap gap-2">
+              <span className="px-2 py-0.5 rounded-full shadow-sm font-medium bg-white/80 border border-purple-100 text-slate-600">{lead.name.split(' ')[0]}</span>
+              <span className="px-2 py-0.5 rounded-full shadow-sm font-medium bg-white/80 border border-purple-100 text-slate-600">{lead.propertyRequirement}</span>
               <span className={cn(
-                "px-2.5 py-1 rounded-full border shadow-sm",
-                lead.priority === 'HIGH' ? "bg-orange-500/10 text-orange-400 border-orange-500/20" : 
-                lead.priority === 'MEDIUM' ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" : 
-                "bg-slate-500/10 text-slate-400 border-slate-500/20"
-              )}>{lead.priority} Priority</span>
+                "px-2 py-0.5 rounded-full border shadow-sm font-bold",
+                lead.priority === 'HIGH' ? "bg-orange-50 text-orange-600 border-orange-200" : 
+                lead.priority === 'MEDIUM' ? "bg-amber-50 text-amber-600 border-amber-200" : 
+                "bg-slate-50 text-slate-600 border-slate-200"
+              )}>{lead.priority}</span>
             </div>
           )}
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth bg-background/30">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth z-10 relative">
           {isLoadingHistory ? (
-            <div className="flex justify-center items-center h-full text-text-secondary">
+            <div className="flex justify-center items-center h-full text-purple-400">
               <Loader2 className="w-6 h-6 animate-spin" />
             </div>
           ) : (
@@ -218,44 +238,44 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
               {messages.map((msg) => (
                 <div key={msg.id} className={cn("flex w-full", msg.role === 'user' ? "justify-end" : "justify-start")}>
                   {msg.role === 'assistant' && (
-                     <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 mr-3 mt-1 shadow-sm border border-primary/10">
+                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600 flex items-center justify-center shrink-0 mr-3 mt-1 shadow-sm border border-purple-200/60">
                         <Bot className="w-4 h-4" />
                      </div>
                   )}
                   <div className={cn(
-                    "max-w-[85%] text-[14px] leading-relaxed",
+                    "max-w-[85%] text-[14px] leading-relaxed shadow-sm",
                     msg.role === 'user'
-                      ? "bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-[4px] shadow-sm"
-                      : "text-slate-300 w-full"
+                      ? "bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] text-white px-5 py-3 rounded-2xl rounded-tr-sm shadow-md"
+                      : "w-full px-5 py-4 rounded-2xl rounded-tl-sm bg-[#f8f5ff]/90 backdrop-blur-sm border border-purple-200/60 text-slate-800"
                   )}>
                     {msg.role === 'assistant' ? (
-                      <div className="flex flex-col gap-2 break-words">
+                      <div className="flex flex-col break-words">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ node, ...props }) => <p className="mb-4 last:mb-0 leading-relaxed" {...props} />,
-                            ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-2" {...props} />,
-                            ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-2" {...props} />,
-                            li: ({ node, ...props }) => <li className="mb-1" {...props} />,
-                            h1: ({ node, ...props }) => <h1 className="text-lg font-semibold mb-3 mt-5 text-white" {...props} />,
-                            h2: ({ node, ...props }) => <h2 className="text-base font-semibold mb-3 mt-5 text-white" {...props} />,
-                            h3: ({ node, ...props }) => <h3 className="text-[15px] font-medium mb-2 mt-4 text-white" {...props} />,
-                            strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
-                            table: ({ node, ...props }) => (
-                              <div className="overflow-x-auto w-full mb-4 rounded-xl border border-border/50 bg-black/20 shadow-sm">
+                            p: ({ node: _node, ...props }) => <p className="mb-3 last:mb-0 leading-relaxed" {...props} />,
+                            ul: ({ node: _node, ...props }) => <ul className="list-disc pl-5 mb-4 space-y-1.5" {...props} />,
+                            ol: ({ node: _node, ...props }) => <ol className="list-decimal pl-5 mb-4 space-y-1.5" {...props} />,
+                            li: ({ node: _node, ...props }) => <li className="mb-1 text-slate-700" {...props} />,
+                            h1: ({ node: _node, ...props }) => <h1 className="text-lg font-bold mb-3 mt-4 text-slate-900" {...props} />,
+                            h2: ({ node: _node, ...props }) => <h2 className="text-base font-bold mb-3 mt-4 text-slate-900" {...props} />,
+                            h3: ({ node: _node, ...props }) => <h3 className="text-[15px] font-semibold mb-2 mt-3 text-slate-800" {...props} />,
+                            strong: ({ node: _node, ...props }) => <strong className="font-semibold text-slate-900" {...props} />,
+                            table: ({ node: _node, ...props }) => (
+                              <div className="overflow-x-auto w-full mb-4 rounded-xl border border-purple-200/50 bg-white/80 shadow-sm">
                                 <table className="w-full text-sm text-left border-collapse" {...props} />
                               </div>
                             ),
-                            th: ({ node, ...props }) => <th className="bg-white/5 font-medium p-3 border-b border-border/50 text-slate-200" {...props} />,
-                            td: ({ node, ...props }) => <td className="p-3 border-b border-border/30 align-top" {...props} />,
-                            pre: ({ node, ...props }) => (
-                              <div className="overflow-x-auto w-full mb-4 rounded-xl bg-black/40 border border-border/50 shadow-inner">
-                                <pre className="p-4 text-[13px] font-mono text-slate-300" {...props} />
+                            th: ({ node: _node, ...props }) => <th className="font-semibold p-3 border-b bg-purple-50/50 border-purple-100 text-slate-800" {...props} />,
+                            td: ({ node: _node, ...props }) => <td className="p-3 border-b align-top border-purple-100/50 text-slate-700" {...props} />,
+                            pre: ({ node: _node, ...props }) => (
+                              <div className="overflow-x-auto w-full mb-4 rounded-xl shadow-inner bg-white/80 border border-purple-100">
+                                <pre className="p-4 text-[13px] font-mono text-slate-800" {...props} />
                               </div>
                             ),
-                            code: ({ node, inline, className, children, ...props }: any) => {
-                              return inline ? (
-                                <code className="bg-primary/10 px-1.5 py-0.5 rounded-md text-primary text-[13px] font-mono border border-primary/10" {...props}>
+                            code: ({ node: _node, inline: isInlineCode, className: _className, children, ...props }: any) => {
+                              return isInlineCode ? (
+                                <code className="bg-purple-100/50 px-1.5 py-0.5 rounded-md text-purple-800 text-[13px] font-mono border border-purple-200/50" {...props}>
                                   {children}
                                 </code>
                               ) : (
@@ -277,13 +297,13 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
               ))}
               {isTyping && (
                 <div className="flex w-full justify-start">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center shrink-0 mr-3 mt-1 shadow-sm border border-primary/10">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600 flex items-center justify-center shrink-0 mr-3 mt-1 shadow-sm border border-purple-200/60">
                     <Bot className="w-4 h-4" />
                   </div>
-                  <div className="px-4 py-3 bg-card/50 border border-border/50 rounded-2xl rounded-tl-[4px] flex items-center gap-1.5 shadow-sm mt-1">
-                    <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
+                  <div className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm mt-1 bg-[#f8f5ff]/90 backdrop-blur-sm border border-purple-200/60">
+                    <div className="w-1.5 h-1.5 bg-purple-500/60 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-1.5 bg-purple-500/60 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-purple-500/60 rounded-full animate-bounce"></div>
                   </div>
                 </div>
               )}
@@ -293,24 +313,24 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 sm:p-5 border-t border-border/50 bg-surface/80 shrink-0">
-          <div className="relative flex items-center bg-background/80 backdrop-blur-md border border-border hover:border-border/80 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 rounded-2xl transition-all shadow-inner group">
+        <div className="p-4 sm:p-5 shrink-0 border-t border-purple-100/50 bg-white/60 backdrop-blur-md z-10">
+          <div className="relative flex items-center border border-purple-200/60 rounded-2xl transition-all group bg-white/80 focus-within:bg-white hover:border-purple-300 focus-within:border-purple-400 focus-within:ring-4 focus-within:ring-purple-100 shadow-sm">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={mode === 'global' ? "Message MASAL AI..." : `Ask about ${lead?.name.split(' ')[0]}...`}
-              className="w-full bg-transparent border-none pl-5 pr-14 py-4 text-[14px] text-white placeholder:text-text-secondary focus:outline-none focus:ring-0 transition-all"
+              placeholder={mode === 'global' ? "Ask MASAL AI..." : `Ask about ${lead?.name.split(' ')[0]}...`}
+              className="w-full bg-transparent border-none pl-5 pr-14 py-4 text-[14px] focus:outline-none focus:ring-0 transition-all text-slate-900 placeholder:text-slate-400"
             />
             <Button
               size="icon"
               variant="ghost"
               className={cn(
-                "absolute right-1.5 w-9 h-9 rounded-full transition-all duration-300",
+                "absolute right-2 w-9 h-9 rounded-full transition-all duration-300 flex items-center justify-center",
                 inputValue.trim() && !isTyping && !isLoadingHistory
-                  ? "bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:scale-105"
-                  : "bg-white/5 text-text-secondary/50"
+                  ? "bg-purple-600 text-white shadow-md hover:bg-purple-700 hover:scale-105"
+                  : "bg-purple-50 text-purple-300"
               )}
               onClick={handleSend}
               disabled={!inputValue.trim() || isTyping || isLoadingHistory}
@@ -318,8 +338,10 @@ export function AIChat({ isOpen, onClose, mode, lead }: AIChatProps) {
               <Send className="w-4 h-4 ml-0.5" />
             </Button>
           </div>
-          <div className="text-center mt-2.5">
-             <span className="text-[11px] text-text-secondary/50 font-medium">MASAL AI can make mistakes. Verify important information.</span>
+          <div className="text-center mt-3">
+             <span className="text-[11px] font-medium text-slate-400">
+               MASAL AI can make mistakes. Verify important information.
+             </span>
           </div>
         </div>
       </div>

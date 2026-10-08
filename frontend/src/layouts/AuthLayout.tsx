@@ -12,7 +12,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
       <div className="hidden lg:flex w-1/2 flex-col justify-between p-12 bg-surface border-r border-border relative overflow-hidden">
         {/* Subtle gradient background */}
         <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
-        
+
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-16">
             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -27,7 +27,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               <span className="text-primary">lead intelligence.</span>
             </h1>
             <p className="text-lg text-text-secondary leading-relaxed">
-              Turn customer inquiries into actionable sales opportunities. 
+              Turn customer inquiries into actionable sales opportunities.
               Manage your pipeline smarter, not harder.
             </p>
           </div>
@@ -47,7 +47,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             </div>
           </div>
         </div>
-        
+
         <div className="relative z-10 text-sm text-text-secondary">
           &copy; {new Date().getFullYear()} MASAL Inc. All rights reserved.
         </div>
@@ -63,7 +63,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             </div>
             <span className="text-xl font-bold tracking-tight text-white">MASAL</span>
           </div>
-          
+
           {children}
         </div>
       </div>
