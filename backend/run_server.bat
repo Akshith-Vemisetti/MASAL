@@ -1,0 +1,3 @@
+@echo off
+echo Starting MASAL backend on port 8005...
+venv\Scripts\uvicorn.exe app.main:app --reload --port 8005
